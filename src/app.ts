@@ -1,10 +1,13 @@
 import express, { type ErrorRequestHandler } from 'express';
 import path from 'node:path';
+import { createTaggerFromEnv, type Tagger } from './claude.js';
 import { renderHandler } from './render.js';
+import { tagHandler } from './tag.js';
 import { createYoucamClientFromEnv, type YoucamClient } from './youcam.js';
 
 export interface AppDeps {
   youcam?: YoucamClient;
+  tagger?: Tagger;
 }
 
 export function createApp(deps: AppDeps = {}) {
@@ -25,11 +28,24 @@ export function createApp(deps: AppDeps = {}) {
     return client;
   };
 
+  let tagger: Tagger | null = deps.tagger ?? null;
+  const getTagger = () => {
+    if (!tagger) {
+      try {
+        tagger = createTaggerFromEnv();
+      } catch {
+        return null;
+      }
+    }
+    return tagger;
+  };
+
   app.get('/api/health', (_req, res) => {
     res.json({ ok: true });
   });
 
   app.post('/api/render', renderHandler(getClient));
+  app.post('/api/tag', tagHandler(getTagger));
 
   app.use(express.static(path.join(process.cwd(), 'public')));
 

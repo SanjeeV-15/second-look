@@ -1,0 +1,145 @@
+:root {
+  --bg: #faf9f7;
+  --surface: #ffffff;
+  --ink: #1c1b19;
+  --muted: #6b675f;
+  --line: #e6e2da;
+  --accent: #2f5d50;
+  --accent-ink: #ffffff;
+  --warn-bg: #fff4e0;
+  --warn-ink: #7a4b00;
+  --danger: #a3341f;
+  --radius: 14px;
+  --shadow: 0 1px 2px rgba(28, 27, 25, 0.06), 0 6px 20px rgba(28, 27, 25, 0.05);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+.wrap { max-width: 980px; margin: 0 auto; padding: 0 16px; }
+
+.top { padding: 28px 0 8px; }
+.top h1 { margin: 0; font-size: 1.9rem; letter-spacing: -0.02em; }
+.tagline { margin: 4px 0 0; color: var(--muted); }
+
+.privacy { color: var(--muted); font-size: 0.9rem; margin: 12px 0; }
+.notice { background: var(--warn-bg); color: var(--warn-ink); border-radius: 10px; padding: 10px 14px; margin: 0 0 12px; }
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  margin: 0 0 20px;
+}
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.panel h2 { margin: 0; font-size: 1.15rem; }
+.count { color: var(--muted); font-weight: 400; font-size: 0.95rem; }
+.hint { color: var(--muted); font-size: 0.92rem; margin: 8px 0 14px; }
+
+.btn {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: 0;
+  border-radius: 10px;
+  padding: 9px 16px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn:hover { filter: brightness(1.08); }
+.btn:focus-visible, input:focus-visible, select:focus-visible, button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 2px;
+}
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.btn.small { padding: 5px 10px; font-size: 0.85rem; font-weight: 500; }
+
+.you { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; margin-top: 12px; }
+.you-photo {
+  width: 160px;
+  aspect-ratio: 2 / 3;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+}
+.you-photo img { width: 100%; height: 100%; object-fit: cover; }
+.you-side { flex: 1; min-width: 220px; }
+.row { display: flex; gap: 10px; align-items: center; }
+
+.seg { border: 0; padding: 0; margin: 14px 0 0; display: flex; gap: 16px; align-items: center; }
+.seg legend { float: left; padding: 0; margin-right: 12px; font-weight: 600; font-size: 0.9rem; }
+
+.empty { color: var(--muted); margin: 0; font-size: 0.9rem; }
+.empty.big { text-align: center; padding: 28px 0; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; margin-top: 8px; }
+
+.card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+}
+.card.review { border-color: #e0b15a; }
+.card .thumb { aspect-ratio: 1 / 1; background: var(--bg); display: grid; place-items: center; }
+.card .thumb img { width: 100%; height: 100%; object-fit: contain; }
+.card .body { padding: 10px; display: grid; gap: 6px; }
+.card input, .card select {
+  width: 100%;
+  font: inherit;
+  font-size: 0.88rem;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.card .name { font-weight: 600; }
+.card .meta { color: var(--muted); font-size: 0.82rem; margin: 0; }
+.card .flag { color: var(--warn-ink); background: var(--warn-bg); border-radius: 6px; padding: 3px 8px; font-size: 0.8rem; margin: 0; }
+.card .actions { display: flex; justify-content: flex-end; }
+.card button.remove { background: none; border: 0; color: var(--danger); cursor: pointer; font: inherit; font-size: 0.82rem; padding: 2px 4px; }
+.card.pending .thumb { position: relative; }
+.card.pending .thumb::after {
+  content: 'Reading…';
+  position: absolute;
+  inset: auto 8px 8px auto;
+  background: rgba(28, 27, 25, 0.78);
+  color: #fff;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 0.8rem;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: #fff;
+  border-radius: 10px;
+  padding: 10px 16px;
+  max-width: min(92vw, 520px);
+  box-shadow: var(--shadow);
+  z-index: 10;
+}
+
+@media (max-width: 520px) {
+  .you-photo { width: 120px; }
+  .grid { grid-template-columns: repeat(2, 1fr); }
+}

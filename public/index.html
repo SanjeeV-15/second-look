@@ -4,9 +4,59 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Closet Try-On</title>
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <h1>Closet Try-On</h1>
-  <p>Scaffold is running. The app arrives in the next steps.</p>
+  <header class="top">
+    <div class="wrap">
+      <h1>Closet Try-On</h1>
+      <p class="tagline">See a new piece on you, styled with what you already own.</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <p class="privacy" id="privacy">Your photos stay in this browser. The server keeps nothing.</p>
+    <p class="notice" id="storage-notice" hidden>Private browsing is blocking storage, so your closet will be lost when you close this tab.</p>
+
+    <section class="panel" aria-labelledby="you-h">
+      <div class="panel-head">
+        <h2 id="you-h">You</h2>
+      </div>
+      <div class="you">
+        <div class="you-photo" id="you-photo">
+          <p class="empty" id="you-empty">No photo yet</p>
+          <img id="you-img" alt="Your photo" hidden>
+        </div>
+        <div class="you-side">
+          <p class="hint">Stand straight, face the camera, arms relaxed, whole body in frame, plain background. One person only.</p>
+          <div class="row">
+            <label class="btn" for="you-file">Choose your photo</label>
+            <input id="you-file" type="file" accept="image/jpeg,image/png" hidden>
+          </div>
+          <fieldset class="seg">
+            <legend>Shoe fit</legend>
+            <label><input type="radio" name="gender" value="male"> Men's</label>
+            <label><input type="radio" name="gender" value="female"> Women's</label>
+          </fieldset>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="closet-h">
+      <div class="panel-head">
+        <h2 id="closet-h">Your closet <span class="count" id="count"></span></h2>
+        <div>
+          <label class="btn" for="closet-file">Add clothes</label>
+          <input id="closet-file" type="file" accept="image/jpeg,image/png" multiple hidden>
+        </div>
+      </div>
+      <p class="hint">Add a photo of each piece: tops, bottoms, shoes, outerwear, accessories. Claude fills in the details, and you can fix any of them.</p>
+      <p class="empty big" id="closet-empty">Your closet is empty. Add a few pieces to get started.</p>
+      <div class="grid" id="grid"></div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <script type="module" src="/app.js"></script>
 </body>
 </html>
