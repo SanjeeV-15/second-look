@@ -4,6 +4,8 @@ Second Look is a closet-aware outfit try-on, built on the YouCam API for the You
 
 You keep a digital closet of your own clothes. When you find something you might buy, you add its photo. Claude compares it with your closet and says what it goes with, what it duplicates, and what it adds. YouCam then shows the outfit on a photo of you, one piece at a time.
 
+**Live demo:** https://second-look-i6ip.onrender.com (it runs with no API keys, so the sample photo, closet and pieces work fully, with their advice and try-ons generated ahead of time and labelled as such).
+
 ## What it does
 
 1. **Your photo.** Choose a photo, take one with your camera, or use the built-in sample.
