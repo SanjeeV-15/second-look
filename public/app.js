@@ -1,19 +1,19 @@
 import { deleteItem, getMeta, listItems, persistent, putItem, setMeta } from './closet.js';
-import { fileToDataUrl, tagImage } from './image.js';
+import { fileToDataUrl, postJson, tagImage } from './image.js';
 
 const CATEGORIES = ['top', 'bottom', 'shoes', 'outerwear', 'accessory'];
 const MAX_ITEMS = 40;
 
 const $ = (id) => document.getElementById(id);
-const state = { items: [], pending: [], person: null, gender: null };
+const state = { items: [], pending: [], person: null, gender: null, candidate: null, advice: null, advising: false };
 
 let toastTimer;
 function toast(message) {
-  const el = $('toast');
-  el.textContent = message;
-  el.hidden = false;
+  const node = $('toast');
+  node.textContent = message;
+  node.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => (el.hidden = true), 5000);
+  toastTimer = setTimeout(() => (node.hidden = true), 5000);
 }
 
 function el(tag, props = {}, ...children) {
@@ -23,9 +23,23 @@ function el(tag, props = {}, ...children) {
     else if (key.startsWith('on')) node.addEventListener(key.slice(2), value);
     else if (value !== undefined && value !== null) node[key] = value;
   }
-  node.append(...children);
+  node.append(...children.filter((c) => c !== null && c !== undefined && c !== false));
   return node;
 }
+
+const newItem = (image, extra = {}) => ({
+  id: crypto.randomUUID(),
+  image,
+  addedAt: Date.now(),
+  name: '',
+  category: 'top',
+  color: '',
+  style: '',
+  formality: 'casual',
+  notes: '',
+  needsReview: false,
+  ...extra,
+});
 
 // ---------- You ----------
 
@@ -59,18 +73,17 @@ for (const radio of document.querySelectorAll('input[name="gender"]')) {
   });
 }
 
-// ---------- Closet ----------
+// ---------- Item cards (closet and candidate share them) ----------
 
-function itemCard(item) {
-  const save = () => putItem(item);
-  const field = (key, placeholder) =>
+function itemCard(item, { onEdit, onRemove, removeLabel = 'Remove' }) {
+  const field = (key, label) =>
     el('input', {
       value: item[key] ?? '',
-      placeholder,
-      ariaLabel: placeholder,
+      placeholder: label,
+      ariaLabel: label,
       oninput: (e) => {
         item[key] = e.target.value;
-        save();
+        onEdit();
       },
     });
 
@@ -81,8 +94,7 @@ function itemCard(item) {
       onchange: (e) => {
         item.category = e.target.value;
         item.needsReview = false;
-        save();
-        render();
+        onEdit(true);
       },
     },
     ...CATEGORIES.map((c) => el('option', { value: c, selected: c === item.category }, c)),
@@ -103,27 +115,51 @@ function itemCard(item) {
       field('color', 'Colour'),
       field('style', 'Style'),
       item.needsReview ? el('p', { class: 'flag' }, 'Check these details') : null,
-      el('div', { class: 'actions' }, el('button', { class: 'remove', type: 'button', onclick: () => remove(item.id) }, 'Remove')),
+      onRemove ? el('div', { class: 'actions' }, el('button', { class: 'remove', type: 'button', onclick: onRemove }, removeLabel)) : null,
     ),
   );
 }
 
-function pendingCard(p) {
-  return el('article', { class: 'card pending' }, el('div', { class: 'thumb' }, el('img', { src: p.image, alt: '' })));
-}
+// ---------- Closet ----------
 
-function render() {
+function renderCloset() {
   const total = state.items.length;
   $('count').textContent = total ? `(${total})` : '';
   $('closet-empty').hidden = total + state.pending.length > 0;
-  const grid = $('grid');
-  grid.replaceChildren(...state.items.map(itemCard), ...state.pending.map(pendingCard));
+  const cards = state.items.map((item) =>
+    itemCard(item, {
+      onEdit: (rerender) => {
+        putItem(item);
+        if (rerender) renderCloset();
+        renderAdviseControls();
+      },
+      onRemove: () => removeItem(item.id),
+    }),
+  );
+  const pending = state.pending.map((p) => el('article', { class: 'card pending' }, el('div', { class: 'thumb' }, el('img', { src: p.image, alt: '' }))));
+  $('grid').replaceChildren(...cards, ...pending);
+  renderAdviseControls();
 }
 
-async function remove(id) {
+async function removeItem(id) {
   state.items = state.items.filter((i) => i.id !== id);
   await deleteItem(id);
-  render();
+  renderCloset();
+  if (state.advice) {
+    state.advice = null;
+    renderAdvice();
+  }
+}
+
+// Read one photo: shrink it, ask Claude for the details, and fall back to a blank item if Claude can't.
+async function readItem(file) {
+  const image = await fileToDataUrl(file);
+  try {
+    return newItem(image, await tagImage(image));
+  } catch (err) {
+    toast(`${err.message} Saved without details.`);
+    return newItem(image, { name: file.name.replace(/\.[^.]+$/, ''), needsReview: true });
+  }
 }
 
 async function addFiles(files) {
@@ -132,31 +168,26 @@ async function addFiles(files) {
       toast(`Your closet is full (${MAX_ITEMS} items). Remove something first.`);
       break;
     }
-    let image;
+    let preview;
     try {
-      image = await fileToDataUrl(file);
+      preview = await fileToDataUrl(file);
     } catch (err) {
       toast(`${file.name}: ${err.message}`);
       continue;
     }
-
-    const pending = { image };
+    const pending = { image: preview };
     state.pending.push(pending);
-    render();
+    renderCloset();
 
-    const item = { id: crypto.randomUUID(), image, addedAt: Date.now(), name: '', category: 'top', color: '', style: '', formality: 'casual', notes: '' };
+    let item;
     try {
-      Object.assign(item, await tagImage(image), { needsReview: false });
-    } catch (err) {
-      // Never block the closet on Claude: keep the item and let the user fill the details in.
-      item.name = file.name.replace(/\.[^.]+$/, '');
-      item.needsReview = true;
-      toast(`${err.message} Saved without details.`);
+      item = await readItem(file);
+    } finally {
+      state.pending = state.pending.filter((p) => p !== pending);
     }
-    state.pending = state.pending.filter((p) => p !== pending);
     state.items.push(item);
     await putItem(item);
-    render();
+    renderCloset();
   }
 }
 
@@ -166,6 +197,157 @@ $('closet-file').addEventListener('change', (event) => {
   if (files.length) addFiles(files);
 });
 
+// ---------- Candidate and advice ----------
+
+function renderCandidate() {
+  const c = state.candidate;
+  $('candidate').hidden = !c;
+  $('candidate-empty').hidden = !!c;
+  if (!c) return;
+  $('candidate-card').replaceChildren(
+    itemCard(c, {
+      onEdit: (rerender) => {
+        state.advice = null;
+        renderAdvice();
+        if (rerender) renderCandidate();
+        renderAdviseControls();
+      },
+    }),
+  );
+  renderAdviseControls();
+  renderAdvice();
+}
+
+function renderAdviseControls() {
+  const btn = $('advise-btn');
+  const note = $('advise-note');
+  if (!state.candidate) return;
+  const noCloset = state.items.length === 0;
+  btn.disabled = noCloset || state.advising;
+  btn.textContent = state.advising ? 'Styling…' : state.advice ? 'Style it again' : 'Style it with my closet';
+  note.textContent = noCloset ? 'Add some of your own clothes to the closet first.' : '';
+}
+
+$('candidate-file').addEventListener('change', async (event) => {
+  const file = event.target.files[0];
+  event.target.value = '';
+  if (!file) return;
+  $('candidate-empty').textContent = 'Reading the item…';
+  try {
+    state.candidate = await readItem(file);
+    state.advice = null;
+  } catch (err) {
+    toast(err.message);
+  }
+  $('candidate-empty').textContent = 'Nothing here yet.';
+  renderCandidate();
+});
+
+$('candidate-clear').addEventListener('click', () => {
+  state.candidate = null;
+  state.advice = null;
+  renderCandidate();
+});
+
+const slim = ({ id, name, category, color, style, formality, notes }) => ({ id, name, category, color, style, formality, notes });
+
+$('advise-btn').addEventListener('click', async () => {
+  if (!state.candidate || state.advising) return;
+  state.advising = true;
+  state.advice = null;
+  renderAdvice();
+  renderAdviseControls();
+  try {
+    const { id, ...candidate } = slim(state.candidate);
+    const body = await postJson('/api/advise', { closet: state.items.map(slim), candidate });
+    state.advice = body.advice;
+  } catch (err) {
+    toast(err.message);
+  } finally {
+    state.advising = false;
+    renderAdviseControls();
+    renderAdvice();
+  }
+});
+
+function piece(item, { isNew = false } = {}) {
+  return el(
+    'figure',
+    { class: `piece${isNew ? ' is-new' : ''}` },
+    el('img', { src: item.image, alt: item.name || item.category }),
+    el('figcaption', {}, isNew ? el('span', { class: 'badge' }, 'New') : null, el('span', {}, item.name || item.category)),
+  );
+}
+
+function renderAdvice() {
+  const box = $('advice');
+  const advice = state.advice;
+  box.hidden = !advice;
+  if (!advice) return void box.replaceChildren();
+
+  const byId = new Map(state.items.map((i) => [i.id, i]));
+  const children = [
+    el('p', { class: 'verdict' }, advice.verdict),
+    advice.gap ? el('p', { class: 'gap' }, advice.gap) : null,
+  ];
+
+  const dupes = advice.duplicates.filter((d) => byId.has(d.itemId));
+  if (dupes.length) {
+    children.push(
+      el('h3', {}, 'You may already own something like this'),
+      el(
+        'div',
+        { class: 'dupes' },
+        ...dupes.map((d) => el('div', { class: 'dupe' }, piece(byId.get(d.itemId)), el('p', {}, d.reason))),
+      ),
+    );
+  }
+
+  if (advice.outfits.length) {
+    children.push(
+      el('h3', {}, 'Outfits with what you own'),
+      el(
+        'div',
+        { class: 'outfits' },
+        ...advice.outfits.map((o) =>
+          el(
+            'article',
+            { class: 'outfit' },
+            el('h4', {}, o.name),
+            el('p', { class: 'reason' }, o.reason),
+            el('div', { class: 'strip' }, piece(state.candidate, { isNew: true }), ...o.itemIds.map((id) => byId.get(id)).filter(Boolean).map((i) => piece(i))),
+          ),
+        ),
+      ),
+    );
+  } else {
+    children.push(el('p', { class: 'hint' }, "Nothing in your closet pairs well with this yet, so there are no outfits to show."));
+  }
+
+  children.push(
+    el(
+      'div',
+      { class: 'row' },
+      el(
+        'button',
+        {
+          class: 'btn ghost small',
+          type: 'button',
+          onclick: async () => {
+            const copy = { ...state.candidate, id: crypto.randomUUID(), addedAt: Date.now() };
+            state.items.push(copy);
+            await putItem(copy);
+            renderCloset();
+            toast('Added to your closet.');
+          },
+        },
+        'I bought it: add to my closet',
+      ),
+    ),
+  );
+  box.replaceChildren(...children);
+}
+
 // ---------- Start ----------
 
 async function init() {
@@ -174,6 +356,7 @@ async function init() {
   state.gender = (await getMeta('gender')) ?? null;
   $('storage-notice').hidden = persistent;
   renderYou();
-  render();
+  renderCloset();
+  renderCandidate();
 }
 init();

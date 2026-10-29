@@ -22,13 +22,22 @@ export async function fileToDataUrl(file, maxSide = 1536, quality = 0.9) {
   return canvas.toDataURL('image/jpeg', quality);
 }
 
-export async function tagImage(dataUrl) {
-  const res = await fetch('/api/tag', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ image: dataUrl }),
-  });
+export async function postJson(url, payload) {
+  let res;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    throw new Error("Can't reach the server.");
+  }
   const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(body.error || 'Could not read that item.');
-  return body.tags;
+  if (!res.ok) throw new Error(body.error || 'Something went wrong.');
+  return body;
+}
+
+export async function tagImage(dataUrl) {
+  return (await postJson('/api/tag', { image: dataUrl })).tags;
 }

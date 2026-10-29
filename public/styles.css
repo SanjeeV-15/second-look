@@ -125,6 +125,33 @@ body {
   font-size: 0.8rem;
 }
 
+.candidate-row { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+.candidate-row .card { width: 210px; }
+.candidate-side { flex: 1; min-width: 220px; display: grid; gap: 8px; justify-items: start; padding-top: 4px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
+
+#advice { margin-top: 20px; border-top: 1px solid var(--line); padding-top: 16px; }
+#advice h3 { font-size: 1rem; margin: 20px 0 8px; }
+.verdict { font-size: 1.1rem; font-weight: 600; margin: 0 0 6px; }
+.gap { color: var(--muted); margin: 0; }
+
+.piece { margin: 0; width: 96px; text-align: center; font-size: 0.78rem; }
+.piece img { width: 96px; height: 96px; object-fit: contain; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; display: block; }
+.piece figcaption { margin-top: 4px; display: grid; gap: 2px; justify-items: center; line-height: 1.25; overflow-wrap: anywhere; }
+.piece.is-new img { border-color: var(--accent); border-width: 2px; }
+.badge { background: var(--accent); color: var(--accent-ink); border-radius: 999px; padding: 0 8px; font-size: 0.7rem; font-weight: 700; }
+
+.dupes { display: grid; gap: 10px; }
+.dupe { display: flex; gap: 12px; align-items: center; }
+.dupe p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+
+.outfits { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.outfit { border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+.outfit h4 { margin: 0 0 2px; font-size: 1rem; }
+.outfit .reason { margin: 0 0 10px; color: var(--muted); font-size: 0.9rem; }
+.strip { display: flex; gap: 10px; flex-wrap: wrap; }
+#advice > .row { margin-top: 18px; }
+
 .toast {
   position: fixed;
   left: 50%;

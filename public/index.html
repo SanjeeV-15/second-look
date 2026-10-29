@@ -42,6 +42,29 @@
       </div>
     </section>
 
+    <section class="panel" aria-labelledby="try-h">
+      <div class="panel-head">
+        <h2 id="try-h">Thinking of buying something?</h2>
+        <div>
+          <label class="btn" for="candidate-file">Add the item</label>
+          <input id="candidate-file" type="file" accept="image/jpeg,image/png" hidden>
+        </div>
+      </div>
+      <p class="hint">Add a photo of the piece. We'll check it against your closet: what it goes with, what it duplicates, and what it adds.</p>
+      <p class="empty big" id="candidate-empty">Nothing here yet.</p>
+      <div id="candidate" hidden>
+        <div class="candidate-row">
+          <div id="candidate-card"></div>
+          <div class="candidate-side">
+            <button class="btn" id="advise-btn" type="button">Style it with my closet</button>
+            <p class="hint" id="advise-note"></p>
+            <button class="btn ghost small" id="candidate-clear" type="button">Clear</button>
+          </div>
+        </div>
+        <div id="advice" hidden></div>
+      </div>
+    </section>
+
     <section class="panel" aria-labelledby="closet-h">
       <div class="panel-head">
         <h2 id="closet-h">Your closet <span class="count" id="count"></span></h2>
