@@ -1,6 +1,7 @@
 import { clearAll, deleteItem, getMeta, listItems, persistent, putItem, setMeta } from './closet.js';
 import { takePhoto } from './camera.js';
 import { fileToDataUrl, loadSampleImage, loadSampleManifest, postJson, streamRender, tagImage } from './image.js';
+import { closetSignature, tagSignature, tryOnKey } from './samplekeys.js';
 
 const CATEGORIES = ['top', 'bottom', 'shoes', 'outerwear', 'hat', 'bag', 'accessory'];
 const MAX_CLOSET = 40;
@@ -19,6 +20,7 @@ const state = {
   pending: [], // closet photos being read
   person: null,
   personIsSample: false,
+  personFile: null, // which sample photo is in use, so a matching pre-generated result can be found
   gender: null,
   tray: [], // pieces being considered
   trayPending: [],
@@ -29,7 +31,7 @@ const state = {
   render: null, // { label, status, steps, done, image, error, code }
   lastTry: null, // { label, items } so a failed try-on can be retried
   rendering: null, // { controller } while a try-on runs
-  looks: [], // finished try-ons, newest first
+  looks: [], // finished try-ons, newest first: { label, image, sample }
   shownLook: null, // index into looks, or null for the live result
 };
 
@@ -83,6 +85,56 @@ async function capture(facing, hint) {
   }
 }
 
+// ---------- Pre-generated samples (no API keys needed) ----------
+// The sample photo and the sample pieces come with advice and try-on results made ahead of time with the
+// real Claude and YouCam APIs, so the whole walkthrough works without keys. They only apply while nothing
+// has been changed: your own photo, an edited piece, or your own clothes in the closet all run live.
+
+let precomputed;
+function loadPrecomputed() {
+  precomputed ??= fetch('/samples/precomputed.json')
+    .then((res) => (res.ok ? res.json() : {}))
+    .catch(() => ({}));
+  return precomputed;
+}
+
+const isPristineSample = (item) => !!item.sampleFile && item.sampleSig === tagSignature(item);
+const pause = (ms, signal) =>
+  new Promise((resolve) => {
+    const timer = setTimeout(resolve, ms);
+    signal?.addEventListener('abort', () => (clearTimeout(timer), resolve()), { once: true });
+  });
+
+async function sampleAdviceFor(c) {
+  if (!isPristineSample(c)) return null;
+  const data = await loadPrecomputed();
+  const entry = data.advice?.[c.sampleFile];
+  if (!entry) return null;
+  // The advice was written for the complete sample closet, exactly as shipped.
+  const manifest = await loadSampleManifest();
+  if (data.closet !== closetSignature(manifest.closet)) return null;
+  const wanted = manifest.closet.map((x) => x.file);
+  const have = state.items.map((i) => i.sampleFile);
+  if (!state.items.every(isPristineSample) || have.length !== wanted.length || !wanted.every((f) => have.includes(f))) return null;
+
+  const idByFile = new Map(state.items.map((i) => [i.sampleFile, i.id]));
+  const ids = (files) => files.map((f) => idByFile.get(f)).filter(Boolean);
+  return {
+    sample: true,
+    verdict: entry.verdict,
+    gap: entry.gap,
+    duplicates: entry.duplicates.map((d) => ({ itemId: idByFile.get(d.file), reason: d.reason })).filter((d) => d.itemId),
+    outfits: entry.outfits.map((o) => ({ name: o.name, itemIds: ids(o.files), reason: o.reason })).filter((o) => o.itemIds.length),
+  };
+}
+
+async function sampleResultFor(pieces) {
+  if (!state.personFile || !pieces.every((p) => isPristineSample(p.item))) return null;
+  const key = tryOnKey(state.personFile, pieces.map((p) => p.item));
+  const entry = key && (await loadPrecomputed()).tryons?.[key];
+  return entry ? `/samples/${entry.file}` : null;
+}
+
 // ---------- Theme ----------
 
 function applyThemeButton() {
@@ -106,8 +158,8 @@ $('theme-btn').addEventListener('click', () => {
 
 function liveResult() {
   const look = state.shownLook != null ? state.looks[state.shownLook] : null;
-  if (look) return { image: look.image, label: look.label, look: true };
-  if (state.render?.image) return { image: state.render.image, label: state.render.label, look: false };
+  if (look) return { image: look.image, label: look.label, look: true, sample: !!look.sample };
+  if (state.render?.image) return { image: state.render.image, label: state.render.label, look: false, sample: !!state.render.sample };
   return null;
 }
 
@@ -125,6 +177,7 @@ function renderMirror() {
   img.alt = showResult ? 'You wearing the outfit' : 'Your photo';
   img.classList.toggle('zoomable', showResult);
   $('credit').hidden = !showResult;
+  if (showResult) $('credit').textContent = result.sample ? 'Sample result, pre-generated with the YouCam API' : 'Try-on generated with the YouCam API';
   $('stage-empty').hidden = !!src;
   $('you-hint').hidden = !!state.person; // the photo tips only matter until there is a photo
 
@@ -236,10 +289,12 @@ async function setPerson(file) {
   try {
     state.person = await fileToDataUrl(file);
     state.personIsSample = false;
+    state.personFile = null;
     state.view = 'before';
     state.shownLook = null;
     await setMeta('person', state.person);
     await setMeta('personSample', false);
+    await setMeta('personSampleFile', null);
     renderMirror();
   } catch (err) {
     toast(err.message);
@@ -260,10 +315,12 @@ async function useSamplePerson() {
     const manifest = await loadSampleManifest();
     state.person = await loadSampleImage(manifest.person.file);
     state.personIsSample = true;
+    state.personFile = manifest.person.file;
     state.view = 'before';
     state.shownLook = null;
     await setMeta('person', state.person);
     await setMeta('personSample', true);
+    await setMeta('personSampleFile', manifest.person.file);
     renderMirror();
   } catch (err) {
     toast(err.message);
@@ -402,7 +459,7 @@ $('closet-sample').addEventListener('click', async () => {
       if (state.items.some((i) => i.sampleFile === sample.file)) continue;
       if (state.items.length >= MAX_CLOSET) break;
       const { file, ...tags } = sample;
-      const item = newItem(await loadSampleImage(file), { ...tags, sampleFile: file });
+      const item = newItem(await loadSampleImage(file), { ...tags, sampleFile: file, sampleSig: tagSignature(tags) });
       state.items.push(item);
       await putItem(item);
       added++;
@@ -429,26 +486,77 @@ function refreshButtons() {
   updateTrayActions();
 }
 
-async function startTryOn(label, items) {
-  if (state.rendering) return;
-  const pieces = wearablePieces(items);
-  if (!pieces.length) return void toast('Only tops and shoes can be shown on you for now.');
-  if (!state.person) {
-    toast('Add your photo first, or use the sample.');
-    return void $('mirror').scrollIntoView({ behavior: 'smooth' });
-  }
-  if (pieces.some((p) => p.slot === 'shoes') && !state.gender && !(await askFit())) return;
-
+function beginTryOn(label, steps, sample) {
   const controller = new AbortController();
   state.rendering = { controller };
-  state.lastTry = { label, items };
-  const view = (state.render = { label, status: 'running', steps: pieces.map((p) => p.slot), done: [], image: null, error: null, code: null });
+  const view = (state.render = { label, status: 'running', steps, done: [], image: null, error: null, code: null, sample });
   state.view = 'after';
   state.shownLook = null;
   renderMirror();
   refreshButtons();
   // On a narrow screen the mirror sits above everything, so bring it into view.
   if (matchMedia('(max-width: 900px)').matches) $('mirror').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  return { controller, view };
+}
+
+function endTryOn(view, label) {
+  state.rendering = null;
+  if (view.status === 'done' && view.image) {
+    state.looks.unshift({ label, image: view.image, sample: !!view.sample });
+    state.looks.length = Math.min(state.looks.length, MAX_LOOKS);
+  }
+  renderMirror();
+  refreshButtons();
+}
+
+// The pre-generated result for the sample photo, shown with the same progress steps as a live one.
+async function runSampleTryOn(label, pieces, url) {
+  const steps = Object.keys(WEARABLE).filter((s) => pieces.some((p) => p.slot === s));
+  const { controller, view } = beginTryOn(label, steps, true);
+  state.lastTry = null; // nothing to retry: a pre-generated result cannot fail
+  try {
+    for (const slot of steps) {
+      await pause(900, controller.signal);
+      if (controller.signal.aborted) break;
+      view.done.push(slot);
+      renderMirror();
+    }
+    if (controller.signal.aborted) view.status = 'cancelled';
+    else {
+      view.image = url;
+      view.status = 'done';
+    }
+  } finally {
+    endTryOn(view, label);
+  }
+}
+
+let starting = false; // covers the gaps (asking about shoes, loading samples) before a try-on is running
+
+async function startTryOn(label, items) {
+  if (state.rendering || starting) return;
+  starting = true;
+  try {
+    const pieces = wearablePieces(items);
+    if (!pieces.length) return void toast('Only tops and shoes can be shown on you for now.');
+    if (!state.person) {
+      toast('Add your photo first, or use the sample.');
+      return void $('mirror').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    const sampleUrl = await sampleResultFor(pieces);
+    if (sampleUrl) return await runSampleTryOn(label, pieces, sampleUrl);
+
+    if (pieces.some((p) => p.slot === 'shoes') && !state.gender && !(await askFit())) return;
+    await runLiveTryOn(label, items, pieces);
+  } finally {
+    starting = false;
+  }
+}
+
+async function runLiveTryOn(label, items, pieces) {
+  const { controller, view } = beginTryOn(label, pieces.map((p) => p.slot), false);
+  state.lastTry = { label, items };
 
   const onEvent = (evt) => {
     if (evt.type === 'start') view.steps = evt.steps;
@@ -480,15 +588,9 @@ async function startTryOn(label, items) {
   } catch (err) {
     view.status = 'error';
     view.error = err.message;
-    view.code = 'network';
+    view.code = err.status ? 'refused' : 'network'; // only a dropped connection is worth retrying
   } finally {
-    state.rendering = null;
-    if (view.status === 'done' && view.image) {
-      state.looks.unshift({ label, image: view.image });
-      state.looks.length = Math.min(state.looks.length, MAX_LOOKS);
-    }
-    renderMirror();
-    refreshButtons();
+    endTryOn(view, label);
   }
 }
 
@@ -619,7 +721,7 @@ $('tray-sample').addEventListener('click', async () => {
       if (state.tray.some((c) => c.sampleFile === sample.file)) continue;
       if (state.tray.length >= MAX_TRAY) break;
       const { file, ...tags } = sample;
-      const item = newItem(await loadSampleImage(file), { ...tags, sampleFile: file });
+      const item = newItem(await loadSampleImage(file), { ...tags, sampleFile: file, sampleSig: tagSignature(tags) });
       state.tray.push(item);
       state.activeId = item.id;
       added++;
@@ -690,9 +792,15 @@ $('advise-btn').addEventListener('click', async () => {
   renderAdvice();
   updateAdviseControls();
   try {
-    const { id, ...candidate } = slim(c);
-    const body = await postJson('/api/advise', { closet: state.items.map(slim), candidate });
-    state.advices[c.id] = body.advice;
+    const pre = await sampleAdviceFor(c);
+    if (pre) {
+      await pause(800); // a short beat, so it reads as an answer rather than a flicker
+      state.advices[c.id] = pre;
+    } else {
+      const { id, ...candidate } = slim(c);
+      const body = await postJson('/api/advise', { closet: state.items.map(slim), candidate });
+      state.advices[c.id] = body.advice;
+    }
   } catch (err) {
     toast(err.message);
   } finally {
@@ -719,7 +827,11 @@ function renderAdvice() {
   if (!advice) return void box.replaceChildren();
 
   const byId = new Map(state.items.map((i) => [i.id, i]));
-  const children = [el('p', { class: 'verdict' }, advice.verdict), advice.gap ? el('p', { class: 'gap' }, advice.gap) : null];
+  const children = [
+    el('p', { class: 'verdict' }, advice.verdict),
+    advice.gap ? el('p', { class: 'gap' }, advice.gap) : null,
+    advice.sample ? el('p', { class: 'hint' }, 'Sample advice, pre-generated with Claude.') : null,
+  ];
 
   const dupes = advice.duplicates.filter((d) => byId.has(d.itemId));
   if (dupes.length) {
@@ -818,6 +930,19 @@ async function init() {
   state.items = await listItems();
   state.person = (await getMeta('person')) ?? null;
   state.personIsSample = !!(await getMeta('personSample'));
+  state.personFile = (await getMeta('personSampleFile')) ?? (state.personIsSample ? 'person.jpg' : null);
+  // Sample pieces saved before pre-generated samples existed have no signature yet. Give one to those still unedited.
+  const manifest = await loadSampleManifest().catch(() => null);
+  if (manifest) {
+    const originals = [...manifest.closet, ...manifest.candidates];
+    for (const item of state.items) {
+      const original = item.sampleFile && !item.sampleSig && originals.find((s) => s.file === item.sampleFile);
+      if (original && tagSignature(original) === tagSignature(item)) {
+        item.sampleSig = tagSignature(original);
+        await putItem(item);
+      }
+    }
+  }
   state.gender = (await getMeta('gender')) ?? null;
   state.view = 'before';
   $('storage-notice').hidden = persistent;

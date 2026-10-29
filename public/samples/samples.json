@@ -1,6 +1,9 @@
 {
-  "credit": "Sample photos are free-licence images from Pexels. Photographers (Pexels usernames): mart-production, anna-nekrashevich, vie-studio, adanvdo, matreding, hiagoitalo.",
-  "person": { "file": "person.jpg", "name": "Sample photo" },
+  "credit": "Sample photos are free-licence images from Pexels. Photographers (Pexels usernames): mart-production, anna-nekrashevich, vie-studio, adanvdo, matreding, hiagoitalo, james-frid, wolfart, onkar-salvi-28181962.",
+  "person": {
+    "file": "person.jpg",
+    "name": "Sample photo"
+  },
   "closet": [
     {
       "file": "black-tee.jpg",
@@ -37,6 +40,24 @@
       "style": "rugged outdoor",
       "formality": "casual",
       "notes": "Canvas with leather buckle straps and front pockets."
+    },
+    {
+      "file": "denim-jacket.jpg",
+      "name": "Denim chore jacket",
+      "category": "outerwear",
+      "color": "mid blue",
+      "style": "workwear",
+      "formality": "casual",
+      "notes": "Washed cotton denim with a button front and patch pockets."
+    },
+    {
+      "file": "denim-shorts.jpg",
+      "name": "Distressed denim shorts",
+      "category": "bottom",
+      "color": "light blue",
+      "style": "casual summer",
+      "formality": "casual",
+      "notes": "Faded wash with ripped details on the thighs and a knee-length cut."
     }
   ],
   "candidates": [
@@ -48,6 +69,15 @@
       "style": "minimalist boxy",
       "formality": "casual",
       "notes": "Heavy cotton jersey with a ribbed crew neckline and a relaxed, slightly cropped fit."
+    },
+    {
+      "file": "striped-shirt.jpg",
+      "name": "Striped button-up shirt",
+      "category": "top",
+      "color": "white with dark stripes",
+      "style": "smart casual",
+      "formality": "smart casual",
+      "notes": "Long-sleeve cotton shirt with thin vertical stripes and a button-down collar."
     }
   ]
 }

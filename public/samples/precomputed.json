@@ -1,0 +1,79 @@
+{
+  "advice": {
+    "orange-tee.jpg": {
+      "verdict": "Worth buying only if you want colour, since it is a basic tee like the one you already own. It is cheap to wear and mixes easily, but it does not fill a real wardrobe gap.",
+      "gap": "It adds a warm burnt orange and a boxier, cropped shape to a closet that is all black, blue and tan. The black tee covers the same kind of item in a different colour and fit, so the overlap is partial and the main gain is colour and proportion.",
+      "duplicates": [],
+      "outfits": [
+        {
+          "name": "Easy summer day",
+          "files": [
+            "denim-shorts.jpg",
+            "sneakers.jpg",
+            "fedora.jpg"
+          ],
+          "reason": "Orange against light blue denim is a simple warm-weather pairing, and the straw hat and black sneakers keep it relaxed."
+        },
+        {
+          "name": "Layered casual",
+          "files": [
+            "denim-jacket.jpg",
+            "sneakers.jpg",
+            "backpack.jpg"
+          ],
+          "reason": "The mid blue chore jacket over the orange tee gives a workwear look, and the tan backpack suits the earthy tone. Black sneakers ground it."
+        },
+        {
+          "name": "Weekend outdoors",
+          "files": [
+            "denim-shorts.jpg",
+            "backpack.jpg",
+            "fedora.jpg"
+          ],
+          "reason": "Tan, straw and orange sit in the same warm range, so this reads as a cohesive outdoor outfit without needing outerwear."
+        }
+      ]
+    },
+    "striped-shirt.jpg": {
+      "verdict": "Worth buying if you want something smarter than a plain tee. Your closet is all casual, and this shirt is the only piece that moves toward smart casual.",
+      "gap": "The only other top is a black tee, which is plain, short-sleeved and casual, so the striped shirt adds a long-sleeve, collared, patterned option. Your closet still has no trousers or smarter shoes, which limits how dressy it can look.",
+      "duplicates": [],
+      "outfits": [
+        {
+          "name": "Casual summer day",
+          "files": [
+            "denim-shorts.jpg",
+            "sneakers.jpg",
+            "fedora.jpg"
+          ],
+          "reason": "Wear the shirt untucked with sleeves rolled up over the light denim shorts. The black suede sneakers and straw hat keep it relaxed."
+        },
+        {
+          "name": "Layered workwear",
+          "files": [
+            "denim-jacket.jpg",
+            "denim-shorts.jpg",
+            "sneakers.jpg",
+            "backpack.jpg"
+          ],
+          "reason": "The stripes sit well under the mid blue chore jacket. The tan backpack adds a practical, outdoorsy touch. Mixing two denim washes works because they are clearly different."
+        }
+      ]
+    }
+  },
+  "tryons": {
+    "person.jpg|orange-tee.jpg": {
+      "file": "results/person__orange-tee.jpg"
+    },
+    "person.jpg|orange-tee.jpg+sneakers.jpg": {
+      "file": "results/person__orange-tee__sneakers.jpg"
+    },
+    "person.jpg|striped-shirt.jpg": {
+      "file": "results/person__striped-shirt.jpg"
+    },
+    "person.jpg|striped-shirt.jpg+sneakers.jpg": {
+      "file": "results/person__striped-shirt__sneakers.jpg"
+    }
+  },
+  "closet": "24325257"
+}

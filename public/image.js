@@ -71,7 +71,8 @@ export async function streamRender(payload, onEvent, signal) {
   }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || 'Something went wrong.');
+    // A refusal from our own server (no key, over a limit, bad request): a retry would get the same answer.
+    throw Object.assign(new Error(body.error || 'Something went wrong.'), { status: res.status });
   }
 
   const decoder = new TextDecoder();

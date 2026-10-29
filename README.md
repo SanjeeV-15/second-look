@@ -79,9 +79,24 @@ Open http://localhost:4320. Use a recent Chrome, Edge, Firefox or Safari.
 - **You:** one person, standing and facing the camera, arms relaxed, whole body in frame, plain background. JPG or PNG.
 - **Closet and new pieces:** one item per photo, front-facing, on a plain background. Product-style photos work best for the try-on.
 
+## Try it without any keys
+
+You do not need an API key to see the whole app work. Use **Use a sample photo**, **Load a sample closet** and **Try a sample**, then **Style it with my closet** and **See it on me**. For the samples, the advice and the try-on results were generated ahead of time with the real Claude and YouCam APIs and are served as files, and each is labelled as pre-generated. The samples run entirely in the browser: no request goes to the server.
+
+As soon as you change something (your own photo, an edited piece, your own clothes in the closet), the app switches to the live APIs, which need the keys in `.env`.
+
+To refresh or extend the samples (for example after adding a photo to `public/samples/` and describing it in `samples.json`):
+
+```bash
+npm run samples:generate           # shows what is missing and the cost; spends nothing
+npm run samples:generate -- --yes  # generates only what is missing
+```
+
+`test/precomputed.test.ts` fails if the samples and the pre-generated results ever fall out of step.
+
 ## Sample photos
 
-The sample photo and sample pieces in `public/samples/` are free-licence images from [Pexels](https://www.pexels.com). Photographers (Pexels usernames): mart-production, anna-nekrashevich, vie-studio, adanvdo, matreding, hiagoitalo. The sample tags in `samples.json` are ready-made, so loading the samples costs nothing and needs no Claude key. A try-on with them still needs a YouCam key.
+The sample photo and sample pieces in `public/samples/` are free-licence images from [Pexels](https://www.pexels.com). Photographers (Pexels usernames): mart-production, anna-nekrashevich, vie-studio, adanvdo, matreding, hiagoitalo, james-frid, wolfart, onkar-salvi-28181962. The sample tags in `samples.json` are ready-made, so loading the samples costs nothing and needs no Claude key. A try-on with them still needs a YouCam key.
 
 ## Spending limits
 
@@ -114,7 +129,8 @@ src/claude.ts     Tagging and advice calls to Claude
 src/advice.ts     Checks Claude's outfits against the real closet
 src/limits.ts     Spending limits
 public/           The page: index.html, app.js, closet.js (IndexedDB), camera.js, image.js, theme.js, styles.css
-public/samples/   Sample photo, sample pieces and their ready-made tags
+public/samples/   Sample photo and pieces, their ready-made tags, and the pre-generated advice and try-ons
+scripts/          generate-samples.ts: builds the pre-generated sample results
 test/             vitest, with fake YouCam and fake Claude (no network, no cost)
 ```
 
