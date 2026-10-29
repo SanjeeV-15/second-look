@@ -28,7 +28,8 @@ export interface ParseClient {
 
 const TAG_PROMPT = [
   "You are cataloguing one item for a person's digital wardrobe from a single photo.",
-  'Return the item category, a short name (at most five words, no brand names), its main colour, its style,',
+  'Return the item category (use "hat" and "bag" for those; use "accessory" only for other things such as watches, jewellery or scarves),',
+  'a short name (at most five words, no brand names), its main colour, its style,',
   'its formality, and one short note about visible material, pattern or fit.',
   'If a person is wearing the item, describe the item, not the person.',
   'If several items are visible, describe the most prominent one.',

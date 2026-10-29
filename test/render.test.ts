@@ -53,13 +53,24 @@ describe('POST /api/render', () => {
     expect(evts.map((e) => e.type)).toEqual(['start', 'step', 'done']);
   });
 
+  it.each(['shoes', 'hat', 'bag'])('needs a gender for a %s', async (slot) => {
+    const res = await post({ person: jpegUrl(), items: [{ slot, image: jpegUrl() }] });
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as any).error).toContain('gender');
+  });
+
+  it.each(['hat', 'bag'])('accepts a %s once a gender is given', async (slot) => {
+    const evts = await events(await post({ person: jpegUrl(), gender: 'female', items: [{ slot, image: jpegUrl() }] }));
+    expect(evts.map((e) => e.type)).toEqual(['start', 'step', 'done']);
+  });
+
   const bad: [string, (b: any) => void, string][] = [
     ['no person photo', (b) => delete b.person, 'Your photo'],
     ['a non-image person', (b) => (b.person = 'data:text/plain;base64,AAAA'), 'JPG or PNG'],
     ['a fake JPEG', (b) => (b.person = jpegUrl(Buffer.from('not a jpeg'))), 'valid JPG'],
     ['no gender', (b) => delete b.gender, 'gender'],
     ['no items', (b) => (b.items = []), 'at least one'],
-    ['an unknown slot', (b) => (b.items[0].slot = 'hat'), 'Unsupported'],
+    ['an unknown slot', (b) => (b.items[0].slot = 'watch'), 'Unsupported'],
     ['bottoms (not enabled yet)', (b) => (b.items[0].slot = 'bottom'), 'Unsupported'],
     ['a duplicate slot', (b) => (b.items[1].slot = 'top'), 'Only one top'],
     ['an item without an image', (b) => delete b.items[0].image, 'The top'],

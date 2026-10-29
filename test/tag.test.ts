@@ -50,7 +50,7 @@ describe('POST /api/tag', () => {
 
   it('only returns tags that match the schema the UI relies on', () => {
     expect(ItemTagsSchema.safeParse(TAGS).success).toBe(true);
-    expect(ItemTagsSchema.safeParse({ ...TAGS, category: 'hat' }).success).toBe(false);
+    expect(ItemTagsSchema.safeParse({ ...TAGS, category: 'watch' }).success).toBe(false);
   });
 
   it('rejects a bad image with 400 before calling Claude', async () => {
@@ -98,7 +98,7 @@ describe('POST /api/advise', () => {
     ['an empty closet', (b) => (b.closet = [])],
     ['no closet', (b) => delete b.closet],
     ['no candidate', (b) => delete b.candidate],
-    ['an unknown category', (b) => (b.closet[0].category = 'hat')],
+    ['an unknown category', (b) => (b.closet[0].category = 'watch')],
     ['an over-long note', (b) => (b.closet[0].notes = 'x'.repeat(500))],
     ['more than 40 items', (b) => (b.closet = Array.from({ length: 41 }, (_, i) => goodItem(`i${i}`)))],
   ];

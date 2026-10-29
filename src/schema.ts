@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-export const CATEGORIES = ['top', 'bottom', 'shoes', 'outerwear', 'accessory'] as const;
+// hat and bag have their own try-on APIs; "accessory" is everything else (watches, jewellery, scarves).
+export const CATEGORIES = ['top', 'bottom', 'shoes', 'outerwear', 'hat', 'bag', 'accessory'] as const;
 export const FORMALITIES = ['casual', 'smart casual', 'formal', 'sport'] as const;
 
 // What Claude fills in for each clothing photo. The user can edit any of it afterwards.

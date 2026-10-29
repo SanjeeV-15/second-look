@@ -23,9 +23,11 @@ You keep a digital closet of your own clothes. When you find something you might
 | Upload | `POST /s2s/v2.0/file`, then `PUT` to the returned URL | Person photo and each garment photo |
 | Top | `POST /s2s/v2.0/task/cloth-v4` with `garment_category: "upper_body"` | AI Clothes try-on |
 | Shoes | `POST /s2s/v2.0/task/shoes-transfer` with `gender` | AI Shoes try-on |
+| Hat | `POST /s2s/v2.0/task/hat` with `gender` | AI Hat try-on (product photos accepted) |
+| Bag | `POST /s2s/v2.0/task/bag` with `gender` | AI Bag try-on (product photos accepted) |
 | Poll | `GET /s2s/v2.0/task/{task}/{task_id}` | Until `task_status` is `success` |
 
-- **Chaining.** Each step's result becomes the next step's input (`src_file_url`), so a top followed by shoes shows both on the same photo. A full outfit is two tasks, about 4 YouCam units and 30 to 40 seconds.
+- **Chaining.** Each step's result becomes the next step's input (`src_file_url`), so a top followed by shoes shows both on the same photo. The order is top, shoes, hat, bag. Each piece is 2 YouCam units and about 15 to 20 seconds.
 - **Category.** The clothes call always names `upper_body`. In testing, `full_body` also changed the shoes without being asked.
 - **Errors.** YouCam error codes (`error_pose`, `error_multi_person`, `exceed_max_filesize`, and others) are mapped to plain messages. If a later step fails, the steps that finished are kept.
 - The API key is sent only in the `Authorization` header and never appears in an error message.
@@ -84,7 +86,7 @@ Each visitor can also run only one try-on at a time.
 
 ## Known limits
 
-- **Only tops and shoes are shown on you.** Bottoms, outerwear and accessories appear in outfits as suggestions. The clothes API documents that lower-body references should be photos of the item being worn, and bottoms have not been tested here.
+- **Only tops, shoes, hats and bags are shown on you.** Bottoms, outerwear, and other accessories (watches, jewellery) appear in outfits as suggestions. The clothes API documents that lower-body references must be photos of the item being worn, not product shots, and the watch API needs a photo of your wrist, so those are not used.
 - **The result is generated, not pasted.** YouCam regenerates the garment on your body, so the cut can differ slightly from the product photo.
 - **Photos matter.** A photo that is not front-facing, or shows more than one person, may be rejected by YouCam.
 - **A try-on takes time.** About 15 to 20 seconds per piece.

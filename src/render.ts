@@ -1,13 +1,13 @@
 import type { RequestHandler } from 'express';
 import { BadRequest, parseDataUrl, type Img } from './images.js';
-import { ORDER, runChain, type Gender, type RenderEvent, type Slot } from './chain.js';
+import { NEEDS_GENDER, ORDER, runChain, type Gender, type RenderEvent, type Slot } from './chain.js';
 import { limitMessage, type Limits } from './limits.js';
 import type { YoucamClient } from './youcam.js';
 
 const MAX_ITEMS = ORDER.length;
 
 // Slots the UI may use today. Bottoms stay off until they pass their own test against the real API.
-const ENABLED_SLOTS: Slot[] = ['top', 'shoes'];
+const ENABLED_SLOTS: Slot[] = ['top', 'shoes', 'hat', 'bag'];
 
 function parse(body: any): { person: Img; items: Partial<Record<Slot, Img>>; gender: Gender } {
   const person = parseDataUrl(body?.person, 'Your photo');
@@ -23,9 +23,11 @@ function parse(body: any): { person: Img; items: Partial<Record<Slot, Img>>; gen
     items[slot] = parseDataUrl(item.image, `The ${slot}`);
   }
 
-  // Only the shoes step needs it: the shoes API takes a gender for the fit.
+  // The shoes, hat and bag APIs take a gender for the fit; the clothes API does not.
   const given = body?.gender === 'female' ? 'female' : body?.gender === 'male' ? 'male' : null;
-  if (items.shoes && !given) throw new BadRequest('gender must be "male" or "female" when trying on shoes.');
+  if (!given && NEEDS_GENDER.some((slot) => items[slot])) {
+    throw new BadRequest('gender must be "male" or "female" when trying on shoes, a hat or a bag.');
+  }
   return { person, items, gender: given ?? 'male' };
 }
 
