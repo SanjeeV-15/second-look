@@ -10,8 +10,6 @@ const ENABLED_SLOTS: Slot[] = ['top', 'shoes'];
 
 function parse(body: any): { person: Img; items: Partial<Record<Slot, Img>>; gender: Gender } {
   const person = parseDataUrl(body?.person, 'Your photo');
-  const gender = body?.gender === 'female' ? 'female' : body?.gender === 'male' ? 'male' : null;
-  if (!gender) throw new BadRequest('gender must be "male" or "female".');
 
   if (!Array.isArray(body?.items) || body.items.length === 0) throw new BadRequest('Add at least one item to try on.');
   if (body.items.length > MAX_ITEMS) throw new BadRequest(`At most ${MAX_ITEMS} items.`);
@@ -23,7 +21,11 @@ function parse(body: any): { person: Img; items: Partial<Record<Slot, Img>>; gen
     if (items[slot]) throw new BadRequest(`Only one ${slot} per outfit.`);
     items[slot] = parseDataUrl(item.image, `The ${slot}`);
   }
-  return { person, items, gender };
+
+  // Only the shoes step needs it: the shoes API takes a gender for the fit.
+  const given = body?.gender === 'female' ? 'female' : body?.gender === 'male' ? 'male' : null;
+  if (items.shoes && !given) throw new BadRequest('gender must be "male" or "female" when trying on shoes.');
+  return { person, items, gender: given ?? 'male' };
 }
 
 export function renderHandler(getClient: () => YoucamClient | null): RequestHandler {

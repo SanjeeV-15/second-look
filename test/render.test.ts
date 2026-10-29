@@ -47,6 +47,12 @@ describe('POST /api/render', () => {
     expect(evts[1].image.startsWith('data:image/jpeg;base64,')).toBe(true);
   });
 
+  it('does not need a gender when there are no shoes', async () => {
+    const body = { person: jpegUrl(), items: [{ slot: 'top', image: jpegUrl() }] };
+    const evts = await events(await post(body));
+    expect(evts.map((e) => e.type)).toEqual(['start', 'step', 'done']);
+  });
+
   const bad: [string, (b: any) => void, string][] = [
     ['no person photo', (b) => delete b.person, 'Your photo'],
     ['a non-image person', (b) => (b.person = 'data:text/plain;base64,AAAA'), 'JPG or PNG'],

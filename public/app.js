@@ -1,11 +1,24 @@
 import { deleteItem, getMeta, listItems, persistent, putItem, setMeta } from './closet.js';
-import { fileToDataUrl, postJson, tagImage } from './image.js';
+import { fileToDataUrl, postJson, streamRender, tagImage } from './image.js';
 
 const CATEGORIES = ['top', 'bottom', 'shoes', 'outerwear', 'accessory'];
 const MAX_ITEMS = 40;
+// Only these can be shown on the person today. Everything else is a text suggestion.
+const WEARABLE = { top: 'Top', shoes: 'Shoes' };
+const SECONDS_PER_PIECE = 20;
 
 const $ = (id) => document.getElementById(id);
-const state = { items: [], pending: [], person: null, gender: null, candidate: null, advice: null, advising: false };
+const state = {
+  items: [],
+  pending: [],
+  person: null,
+  gender: null,
+  candidate: null,
+  advice: null,
+  advising: false,
+  renders: {}, // key -> { status, steps, done, image, error }
+  rendering: null, // { key, controller } while a try-on is running
+};
 
 let toastTimer;
 function toast(message) {
@@ -147,6 +160,7 @@ async function removeItem(id) {
   renderCloset();
   if (state.advice) {
     state.advice = null;
+    resetRenders('outfit-');
     renderAdvice();
   }
 }
@@ -199,6 +213,135 @@ $('closet-file').addEventListener('change', (event) => {
 
 // ---------- Candidate and advice ----------
 
+// ---------- Try-on ----------
+
+function wearablePieces(items) {
+  const picked = {};
+  for (const item of items) if (item.category in WEARABLE && !picked[item.category]) picked[item.category] = item;
+  return Object.entries(picked).map(([slot, item]) => ({ slot, item }));
+}
+
+// Forget try-on results whose key starts with the prefix (all of them by default), stopping one that is running.
+function resetRenders(prefix = '') {
+  if (state.rendering?.key.startsWith(prefix)) state.rendering.controller.abort();
+  for (const key of Object.keys(state.renders)) if (key.startsWith(prefix)) delete state.renders[key];
+  for (const node of document.querySelectorAll('[data-tryon]')) refreshTryon(node.dataset.tryon);
+}
+
+function refreshButtons() {
+  for (const btn of document.querySelectorAll('.tryon-btn')) btn.disabled = !!state.rendering;
+}
+
+function tryonView(view) {
+  const parts = [];
+  if (view.steps.length) {
+    parts.push(
+      el('ol', { class: 'steps' }, ...view.steps.map((s) => el('li', { class: view.done.includes(s) ? 'done' : '' }, WEARABLE[s]))),
+    );
+  }
+  if (view.status === 'running') {
+    parts.push(
+      el(
+        'div',
+        { class: 'row' },
+        el('span', { class: 'spinner', ariaHidden: 'true' }),
+        el('span', { class: 'hint inline' }, 'Putting it on you…'),
+        el('button', { class: 'btn ghost small', type: 'button', onclick: () => state.rendering?.controller.abort() }, 'Cancel'),
+      ),
+    );
+  }
+  if (view.status === 'done' && view.image) {
+    parts.push(
+      el(
+        'div',
+        { class: 'compare' },
+        el('figure', {}, el('img', { src: state.person, alt: 'You' }), el('figcaption', {}, 'You')),
+        el('figure', {}, el('img', { src: view.image, alt: 'You with the outfit' }), el('figcaption', {}, 'With this outfit')),
+      ),
+      el('a', { class: 'btn ghost small', href: view.image, download: 'try-on.jpg' }, 'Download'),
+    );
+  } else if (view.image) {
+    parts.push(el('figure', { class: 'partial' }, el('img', { src: view.image, alt: 'Try-on so far' }), el('figcaption', {}, view.status === 'running' ? 'So far…' : 'The steps that finished')));
+  }
+  if (view.status === 'cancelled') parts.push(el('p', { class: 'hint' }, 'Cancelled.'));
+  if (view.error) parts.push(el('p', { class: 'error' }, view.error));
+  return parts;
+}
+
+function refreshTryon(key) {
+  const node = document.querySelector(`[data-tryon="${key}"]`);
+  if (!node) return;
+  const view = state.renders[key];
+  node.hidden = !view;
+  node.replaceChildren(...(view ? tryonView(view) : []));
+}
+
+async function startTryOn(key, items) {
+  if (state.rendering) return;
+  const pieces = wearablePieces(items);
+  if (!pieces.length) return void toast('Only tops and shoes can be shown on you for now.');
+  if (!state.person) {
+    toast('Add your photo first.');
+    return void $('you-h').scrollIntoView({ behavior: 'smooth' });
+  }
+  if (pieces.some((p) => p.slot === 'shoes') && !state.gender) {
+    toast("Choose Men's or Women's shoe fit first.");
+    return void $('you-h').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  const controller = new AbortController();
+  state.rendering = { key, controller };
+  const view = (state.renders[key] = { status: 'running', steps: pieces.map((p) => p.slot), done: [], image: null, error: null });
+  refreshTryon(key);
+  refreshButtons();
+
+  const onEvent = (evt) => {
+    if (evt.type === 'start') view.steps = evt.steps;
+    else if (evt.type === 'step') {
+      view.done.push(evt.slot);
+      view.image = evt.image;
+    } else if (evt.type === 'done') view.status = 'done';
+    else if (evt.type === 'error') {
+      view.status = 'error';
+      view.error = evt.message;
+    }
+    refreshTryon(key);
+  };
+
+  try {
+    await streamRender(
+      { person: state.person, gender: state.gender ?? undefined, items: pieces.map((p) => ({ slot: p.slot, image: p.item.image })) },
+      onEvent,
+      controller.signal,
+    );
+    if (view.status === 'running') {
+      view.status = controller.signal.aborted ? 'cancelled' : 'error';
+      if (view.status === 'error') view.error = 'The try-on ended unexpectedly. Try again.';
+    }
+  } catch (err) {
+    view.status = 'error';
+    view.error = err.message;
+  } finally {
+    state.rendering = null;
+    refreshTryon(key);
+    refreshButtons();
+  }
+}
+
+function tryonButton(key, items) {
+  const pieces = wearablePieces(items);
+  const skipped = items.length - pieces.length;
+  const label = pieces.length ? `See it on me (${pieces.length} piece${pieces.length > 1 ? 's' : ''}, about ${pieces.length * SECONDS_PER_PIECE}s)` : null;
+  return el(
+    'div',
+    { class: 'tryon-row' },
+    label ? el('button', { class: 'btn small tryon-btn', type: 'button', disabled: !!state.rendering, onclick: () => startTryOn(key, items) }, label) : null,
+    skipped > 0 ? el('span', { class: 'hint inline' }, `${pieces.length ? 'The rest' : 'These'} can't be shown on you yet, only tops and shoes.`) : null,
+  );
+}
+
+// ---------- Candidate ----------
+
 function renderCandidate() {
   const c = state.candidate;
   $('candidate').hidden = !c;
@@ -208,6 +351,7 @@ function renderCandidate() {
     itemCard(c, {
       onEdit: (rerender) => {
         state.advice = null;
+        resetRenders();
         renderAdvice();
         if (rerender) renderCandidate();
         renderAdviseControls();
@@ -226,6 +370,12 @@ function renderAdviseControls() {
   btn.disabled = noCloset || state.advising;
   btn.textContent = state.advising ? 'Styling…' : state.advice ? 'Style it again' : 'Style it with my closet';
   note.textContent = noCloset ? 'Add some of your own clothes to the closet first.' : '';
+
+  const solo = $('candidate-tryon-btn');
+  const wearable = state.candidate.category in WEARABLE;
+  solo.hidden = !wearable;
+  solo.disabled = !!state.rendering;
+  solo.classList.toggle('tryon-btn', wearable);
 }
 
 $('candidate-file').addEventListener('change', async (event) => {
@@ -236,6 +386,7 @@ $('candidate-file').addEventListener('change', async (event) => {
   try {
     state.candidate = await readItem(file);
     state.advice = null;
+    resetRenders();
   } catch (err) {
     toast(err.message);
   }
@@ -244,9 +395,14 @@ $('candidate-file').addEventListener('change', async (event) => {
 });
 
 $('candidate-clear').addEventListener('click', () => {
+  resetRenders();
   state.candidate = null;
   state.advice = null;
   renderCandidate();
+});
+
+$('candidate-tryon-btn').addEventListener('click', () => {
+  if (state.candidate) startTryOn('candidate', [state.candidate]);
 });
 
 const slim = ({ id, name, category, color, style, formality, notes }) => ({ id, name, category, color, style, formality, notes });
@@ -255,6 +411,7 @@ $('advise-btn').addEventListener('click', async () => {
   if (!state.candidate || state.advising) return;
   state.advising = true;
   state.advice = null;
+  resetRenders('outfit-');
   renderAdvice();
   renderAdviseControls();
   try {
@@ -309,15 +466,20 @@ function renderAdvice() {
       el(
         'div',
         { class: 'outfits' },
-        ...advice.outfits.map((o) =>
-          el(
+        ...advice.outfits.map((o, index) => {
+          const items = [state.candidate, ...o.itemIds.map((id) => byId.get(id)).filter(Boolean)];
+          const tryon = el('div', { class: 'tryon', hidden: true });
+          tryon.dataset.tryon = `outfit-${index}`;
+          return el(
             'article',
             { class: 'outfit' },
             el('h4', {}, o.name),
             el('p', { class: 'reason' }, o.reason),
-            el('div', { class: 'strip' }, piece(state.candidate, { isNew: true }), ...o.itemIds.map((id) => byId.get(id)).filter(Boolean).map((i) => piece(i))),
-          ),
-        ),
+            el('div', { class: 'strip' }, piece(state.candidate, { isNew: true }), ...items.slice(1).map((i) => piece(i))),
+            tryonButton(`outfit-${index}`, items),
+            tryon,
+          );
+        }),
       ),
     );
   } else {
@@ -346,6 +508,8 @@ function renderAdvice() {
     ),
   );
   box.replaceChildren(...children);
+  // Rebuilding the advice must not lose a try-on that is running or finished.
+  for (const node of box.querySelectorAll('[data-tryon]')) refreshTryon(node.dataset.tryon);
 }
 
 // ---------- Start ----------

@@ -152,6 +152,27 @@ body {
 .strip { display: flex; gap: 10px; flex-wrap: wrap; }
 #advice > .row { margin-top: 18px; }
 
+.tryon-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.hint.inline { margin: 0; }
+.tryon { margin-top: 14px; display: grid; gap: 12px; justify-items: start; }
+.tryon .compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 100%; max-width: 560px; }
+.tryon figure { margin: 0; text-align: center; font-size: 0.85rem; color: var(--muted); }
+.tryon figure img { width: 100%; border-radius: 12px; border: 1px solid var(--line); display: block; background: var(--bg); }
+.tryon figure.partial { width: min(100%, 280px); }
+.tryon figcaption { margin-top: 4px; }
+.steps { display: flex; gap: 8px; list-style: none; padding: 0; margin: 0; flex-wrap: wrap; }
+.steps li { border: 1px solid var(--line); border-radius: 999px; padding: 2px 12px; font-size: 0.82rem; color: var(--muted); }
+.steps li.done { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.steps li.done::before { content: '\2713\00a0'; }
+.error { color: var(--danger); margin: 0; font-size: 0.92rem; }
+.spinner {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid var(--line); border-top-color: var(--accent);
+  animation: spin 0.8s linear infinite; display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+
 .toast {
   position: fixed;
   left: 50%;

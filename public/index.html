@@ -58,9 +58,13 @@
           <div class="candidate-side">
             <button class="btn" id="advise-btn" type="button">Style it with my closet</button>
             <p class="hint" id="advise-note"></p>
-            <button class="btn ghost small" id="candidate-clear" type="button">Clear</button>
+            <div class="row">
+              <button class="btn ghost small" id="candidate-tryon-btn" type="button" hidden>See just this on me</button>
+              <button class="btn ghost small" id="candidate-clear" type="button">Clear</button>
+            </div>
           </div>
         </div>
+        <div class="tryon" id="candidate-tryon" data-tryon="candidate" hidden></div>
         <div id="advice" hidden></div>
       </div>
     </section>
