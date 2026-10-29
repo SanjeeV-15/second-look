@@ -18,6 +18,8 @@ You keep a digital closet of your own clothes. When you find something you might
 
 Shoes need a men's or women's style, so the app asks once, the first time a try-on includes shoes, and remembers the answer (there is a Change link). Tops never ask.
 
+A How it works button explains the flow in the app itself, results carry a "generated with the YouCam API" line and can be enlarged, and a failed try-on offers Try again when a retry makes sense (a bad pose asks for a better photo instead).
+
 The page opens in a dark glass theme, with a light theme one click away. Three progress steps at the top tick off as you add a photo, fill the closet and try something on. On a phone, the camera buttons open the device camera. A footer button clears your photo and closet from the browser.
 
 ### Accessibility

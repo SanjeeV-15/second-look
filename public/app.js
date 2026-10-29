@@ -9,6 +9,8 @@ const MAX_LOOKS = 8;
 // Only these can be shown on the person. Everything else is a text suggestion.
 const WEARABLE = { top: 'Top', shoes: 'Shoes' };
 const SECONDS_PER_PIECE = 20;
+// Errors worth a retry button. Photo problems (pose, several people) say what to change instead.
+const RETRYABLE = ['upstream', 'timeout', 'rate_limited', 'network'];
 
 const $ = (id) => document.getElementById(id);
 
@@ -24,7 +26,8 @@ const state = {
   advices: {}, // tray item id -> advice
   advising: false,
   view: 'after', // mirror: 'before' (you) or 'after' (with the outfit)
-  render: null, // { label, status, steps, done, image, error }
+  render: null, // { label, status, steps, done, image, error, code }
+  lastTry: null, // { label, items } so a failed try-on can be retried
   rendering: null, // { controller } while a try-on runs
   looks: [], // finished try-ons, newest first
   shownLook: null, // index into looks, or null for the live result
@@ -85,6 +88,7 @@ async function capture(facing, hint) {
 function applyThemeButton() {
   const dark = document.documentElement.dataset.theme === 'dark';
   $('theme-btn').setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#080b16' : '#eef2fa');
 }
 $('theme-btn').addEventListener('click', () => {
   const dark = document.documentElement.dataset.theme === 'dark';
@@ -119,6 +123,8 @@ function renderMirror() {
     img._src = src;
   }
   img.alt = showResult ? 'You wearing the outfit' : 'Your photo';
+  img.classList.toggle('zoomable', showResult);
+  $('credit').hidden = !showResult;
   $('stage-empty').hidden = !!src;
   $('you-hint').hidden = !!state.person; // the photo tips only matter until there is a photo
 
@@ -133,9 +139,12 @@ function renderMirror() {
   const r = state.render;
   const running = r?.status === 'running' && state.shownLook == null;
   $('progress').hidden = !running;
+  $('progress-text').textContent = running ? `Putting it on you… ${r.done.length} of ${r.steps.length} done` : '';
   $('steps').replaceChildren(...(r?.steps ?? []).map((s) => el('li', { class: r.done.includes(s) ? 'done' : '' }, WEARABLE[s] ?? s)));
-  $('render-error').hidden = !(r?.error && state.shownLook == null);
+  const showError = !!(r?.error && state.shownLook == null);
+  $('error-box').hidden = !showError;
   $('render-error').textContent = r?.error ?? '';
+  $('retry-btn').hidden = !(showError && RETRYABLE.includes(r.code) && state.lastTry);
 
   $('render-actions').hidden = !(showResult && (result.look || r?.status === 'done'));
   if (showResult) $('download').href = result.image;
@@ -432,7 +441,8 @@ async function startTryOn(label, items) {
 
   const controller = new AbortController();
   state.rendering = { controller };
-  const view = (state.render = { label, status: 'running', steps: pieces.map((p) => p.slot), done: [], image: null, error: null });
+  state.lastTry = { label, items };
+  const view = (state.render = { label, status: 'running', steps: pieces.map((p) => p.slot), done: [], image: null, error: null, code: null });
   state.view = 'after';
   state.shownLook = null;
   renderMirror();
@@ -449,6 +459,7 @@ async function startTryOn(label, items) {
     else if (evt.type === 'error') {
       view.status = 'error';
       view.error = evt.message;
+      view.code = evt.code;
     }
     renderMirror();
   };
@@ -461,11 +472,15 @@ async function startTryOn(label, items) {
     );
     if (view.status === 'running') {
       view.status = controller.signal.aborted ? 'cancelled' : 'error';
-      if (view.status === 'error') view.error = 'The try-on ended unexpectedly. Try again.';
+      if (view.status === 'error') {
+        view.error = 'The try-on ended unexpectedly. Try again.';
+        view.code = 'network';
+      }
     }
   } catch (err) {
     view.status = 'error';
     view.error = err.message;
+    view.code = 'network';
   } finally {
     state.rendering = null;
     if (view.status === 'done' && view.image) {
@@ -495,45 +510,44 @@ function selectPiece(id) {
   state.activeId = id;
   renderTray();
   renderDetail();
+  // The tray was rebuilt, so put keyboard focus back on the card that was just chosen.
+  document.querySelector('.tcard.active .tselect')?.focus();
 }
 
 function trayCard(c) {
   const wearable = isWearable(c);
-  const stop = (fn) => (e) => {
-    e.stopPropagation();
-    fn();
-  };
+  const isActive = c.id === state.activeId;
   return el(
     'article',
-    { class: `tcard${c.id === state.activeId ? ' active' : ''}`, onclick: () => selectPiece(c.id) },
+    { class: `tcard${isActive ? ' active' : ''}` },
     el(
-      'div',
-      { class: 'thumb' },
-      el('img', { src: c.image, alt: c.name || 'Piece' }),
-      wearable
-        ? el(
-            'label',
-            { class: 'check', title: 'Include in a together try-on', onclick: (e) => e.stopPropagation() },
-            el('input', {
-              type: 'checkbox',
-              checked: !!c.selected,
-              'aria-label': `Include ${c.name || 'this piece'} in a together try-on`,
-              onchange: (e) => {
-                c.selected = e.target.checked;
-                updateTrayActions();
-              },
-            }),
-          )
-        : null,
+      'button',
+      { class: 'tselect', type: 'button', 'aria-pressed': String(isActive), 'aria-label': `Select ${c.name || c.category}`, onclick: () => selectPiece(c.id) },
+      el('div', { class: 'thumb' }, el('img', { src: c.image, alt: '' })),
+      el('div', { class: 'tbody' }, el('p', { class: 'tname', 'data-tname': c.id }, c.name || c.category), el('span', { class: 'chip' }, c.category)),
     ),
-    el('div', { class: 'tbody' }, el('p', { class: 'tname', 'data-tname': c.id }, c.name || c.category), el('span', { class: 'chip' }, c.category)),
+    wearable
+      ? el(
+          'label',
+          { class: 'check', title: 'Include in a together try-on' },
+          el('input', {
+            type: 'checkbox',
+            checked: !!c.selected,
+            'aria-label': `Include ${c.name || 'this piece'} in a together try-on`,
+            onchange: (e) => {
+              c.selected = e.target.checked;
+              updateTrayActions();
+            },
+          }),
+        )
+      : null,
     el(
       'div',
       { class: 'trow' },
       wearable
-        ? el('button', { class: 'btn small tryon-btn', type: 'button', disabled: !!state.rendering, onclick: stop(() => startTryOn(c.name || c.category, [c])) }, 'Try on')
+        ? el('button', { class: 'btn small tryon-btn', type: 'button', disabled: !!state.rendering, onclick: () => startTryOn(c.name || c.category, [c]) }, 'Try on')
         : el('span'),
-      el('button', { class: 'link', type: 'button', onclick: stop(() => removeCandidate(c.id)) }, 'Remove'),
+      el('button', { class: 'link', type: 'button', onclick: () => removeCandidate(c.id) }, 'Remove'),
     ),
   );
 }
@@ -764,6 +778,30 @@ function renderAdvice() {
   );
   box.replaceChildren(...children);
 }
+
+// ---------- Retry, enlarge, and the info dialog ----------
+
+$('retry-btn').addEventListener('click', () => {
+  if (state.lastTry) startTryOn(state.lastTry.label, state.lastTry.items);
+});
+
+function openZoom() {
+  const result = liveResult();
+  if (!result) return;
+  const dialog = $('zoom-dialog');
+  dialog.querySelector('img').src = result.image;
+  dialog.showModal();
+}
+$('zoom-btn').addEventListener('click', openZoom);
+$('stage-img').addEventListener('click', () => {
+  if ($('stage-img').classList.contains('zoomable')) openZoom();
+});
+
+$('how-btn').addEventListener('click', () => $('how-dialog').showModal());
+for (const button of document.querySelectorAll('[data-close]')) button.addEventListener('click', () => button.closest('dialog').close());
+// Reading dialogs close on a click anywhere outside the text; the camera and shoe dialogs stay put.
+$('how-dialog').addEventListener('click', (e) => e.target === e.currentTarget && e.currentTarget.close());
+$('zoom-dialog').addEventListener('click', (e) => e.currentTarget.close());
 
 // ---------- Privacy ----------
 
