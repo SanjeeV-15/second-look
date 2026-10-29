@@ -48,12 +48,9 @@ describe('runChain', () => {
     expect(tasks.map((t) => (t.body as any).garment_category ?? 'shoes')).toEqual(['upper_body', 'lower_body', 'shoes']);
   });
 
-  it('puts the hat and then the bag after the shoes, each with the gender', async () => {
-    const { tasks } = await run({ bag: img('bag.jpg'), hat: img('hat.jpg'), shoes: img('s.jpg'), top: img('t.jpg') });
-    expect(tasks.map((t) => t.task)).toEqual(['cloth-v4', 'shoes-transfer', 'hat', 'bag']);
-    expect(tasks[2]!.body).toMatchObject({ src_file_url: 'https://result.test/2.jpg', gender: 'male' });
-    expect(tasks[3]!.body).toMatchObject({ src_file_url: 'https://result.test/3.jpg', gender: 'male' });
-    expect(tasks[3]!.body).not.toHaveProperty('garment_category');
+  it('ignores hats and bags: their APIs regenerate the whole scene, so they are never run', async () => {
+    const { tasks } = await run({ top: img('t.jpg'), hat: img('hat.jpg'), bag: img('bag.jpg') } as any);
+    expect(tasks.map((t) => t.task)).toEqual(['cloth-v4']);
   });
 
   it('skips slots that were not given and uploads only what it needs', async () => {

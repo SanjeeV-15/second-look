@@ -53,15 +53,18 @@ describe('POST /api/render', () => {
     expect(evts.map((e) => e.type)).toEqual(['start', 'step', 'done']);
   });
 
-  it.each(['shoes', 'hat', 'bag'])('needs a gender for a %s', async (slot) => {
-    const res = await post({ person: jpegUrl(), items: [{ slot, image: jpegUrl() }] });
+  it('needs a gender for shoes', async () => {
+    const res = await post({ person: jpegUrl(), items: [{ slot: 'shoes', image: jpegUrl() }] });
     expect(res.status).toBe(400);
     expect(((await res.json()) as any).error).toContain('gender');
   });
 
-  it.each(['hat', 'bag'])('accepts a %s once a gender is given', async (slot) => {
-    const evts = await events(await post({ person: jpegUrl(), gender: 'female', items: [{ slot, image: jpegUrl() }] }));
-    expect(evts.map((e) => e.type)).toEqual(['start', 'step', 'done']);
+  it.each(['hat', 'bag'])('refuses a %s: its API regenerates the whole picture', async (slot) => {
+    const before = fake.tasks.length;
+    const res = await post({ person: jpegUrl(), gender: 'male', items: [{ slot, image: jpegUrl() }] });
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as any).error).toContain('Unsupported');
+    expect(fake.tasks.length).toBe(before);
   });
 
   const bad: [string, (b: any) => void, string][] = [

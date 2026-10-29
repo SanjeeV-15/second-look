@@ -4,7 +4,7 @@ import { fileToDataUrl, postJson, streamRender, tagImage } from './image.js';
 const CATEGORIES = ['top', 'bottom', 'shoes', 'outerwear', 'hat', 'bag', 'accessory'];
 const MAX_ITEMS = 40;
 // Only these can be shown on the person today. Everything else is a text suggestion.
-const WEARABLE = { top: 'Top', shoes: 'Shoes', hat: 'Hat', bag: 'Bag' };
+const WEARABLE = { top: 'Top', shoes: 'Shoes' };
 const SECONDS_PER_PIECE = 20;
 
 const $ = (id) => document.getElementById(id);
@@ -279,7 +279,7 @@ function refreshTryon(key) {
 async function startTryOn(key, items) {
   if (state.rendering) return;
   const pieces = wearablePieces(items);
-  if (!pieces.length) return void toast('Only tops, shoes, hats and bags can be shown on you for now.');
+  if (!pieces.length) return void toast('Only tops and shoes can be shown on you for now.');
   if (!state.person) {
     toast('Add your photo first.');
     return void $('you-h').scrollIntoView({ behavior: 'smooth' });
@@ -336,7 +336,7 @@ function tryonButton(key, items) {
     'div',
     { class: 'tryon-row' },
     label ? el('button', { class: 'btn small tryon-btn', type: 'button', disabled: !!state.rendering, onclick: () => startTryOn(key, items) }, label) : null,
-    skipped > 0 ? el('span', { class: 'hint inline' }, `${pieces.length ? 'The rest' : 'These'} can't be shown on you yet, only tops, shoes, hats and bags.`) : null,
+    skipped > 0 ? el('span', { class: 'hint inline' }, `${pieces.length ? 'The rest' : 'These'} can't be shown on you yet, only tops and shoes.`) : null,
   );
 }
 

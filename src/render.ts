@@ -7,7 +7,7 @@ import type { YoucamClient } from './youcam.js';
 const MAX_ITEMS = ORDER.length;
 
 // Slots the UI may use today. Bottoms stay off until they pass their own test against the real API.
-const ENABLED_SLOTS: Slot[] = ['top', 'shoes', 'hat', 'bag'];
+const ENABLED_SLOTS: Slot[] = ['top', 'shoes'];
 
 function parse(body: any): { person: Img; items: Partial<Record<Slot, Img>>; gender: Gender } {
   const person = parseDataUrl(body?.person, 'Your photo');
@@ -23,10 +23,10 @@ function parse(body: any): { person: Img; items: Partial<Record<Slot, Img>>; gen
     items[slot] = parseDataUrl(item.image, `The ${slot}`);
   }
 
-  // The shoes, hat and bag APIs take a gender for the fit; the clothes API does not.
+  // The shoes API takes a gender for the fit; the clothes API does not.
   const given = body?.gender === 'female' ? 'female' : body?.gender === 'male' ? 'male' : null;
   if (!given && NEEDS_GENDER.some((slot) => items[slot])) {
-    throw new BadRequest('gender must be "male" or "female" when trying on shoes, a hat or a bag.');
+    throw new BadRequest('gender must be "male" or "female" when trying on shoes.');
   }
   return { person, items, gender: given ?? 'male' };
 }

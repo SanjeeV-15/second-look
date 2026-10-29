@@ -2,22 +2,24 @@
 import { toDataUrl, type Img } from './images.js';
 import { YoucamError, type YoucamClient, type YoucamErrorCode } from './youcam.js';
 
-export type Slot = 'top' | 'bottom' | 'shoes' | 'hat' | 'bag';
+export type Slot = 'top' | 'bottom' | 'shoes';
 export type Gender = 'male' | 'female';
 
-// Order matters: clothes first, then shoes, then the accessories that sit on top of everything.
-export const ORDER: Slot[] = ['top', 'bottom', 'shoes', 'hat', 'bag'];
+// Order matters: clothes first, then shoes.
+export const ORDER: Slot[] = ['top', 'bottom', 'shoes'];
 
 // Slots whose API takes a gender for the fit.
-export const NEEDS_GENDER: Slot[] = ['shoes', 'hat', 'bag'];
+export const NEEDS_GENDER: Slot[] = ['shoes'];
+
+// Hats and bags are deliberately absent. The hat and bag APIs were tried live and they regenerate the
+// whole picture as a new styled scene (new background, new clothes, a different pose), so they
+// cannot be chained on top of a try-on without destroying it.
 
 // Always name the category: "full_body" was seen changing the shoes unasked.
 const STEPS: Record<Slot, { task: string; params: (gender: Gender) => Record<string, unknown> }> = {
   top: { task: 'cloth-v4', params: () => ({ garment_category: 'upper_body' }) },
   bottom: { task: 'cloth-v4', params: () => ({ garment_category: 'lower_body' }) },
   shoes: { task: 'shoes-transfer', params: (gender) => ({ gender, style: 'random' }) },
-  hat: { task: 'hat', params: (gender) => ({ gender }) },
-  bag: { task: 'bag', params: (gender) => ({ gender }) },
 };
 
 export type RenderEvent =
