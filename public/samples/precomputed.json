@@ -59,6 +59,32 @@
           "reason": "The stripes sit well under the mid blue chore jacket. The tan backpack adds a practical, outdoorsy touch. Mixing two denim washes works because they are clearly different."
         }
       ]
+    },
+    "boots.jpg": {
+      "verdict": "Worth buying if you want something smarter or cooler-weather than your skate sneakers. It fills a real gap, though you'll need a longer pair of trousers to get the most out of it.",
+      "gap": "Your only shoes are casual black suede skate sneakers, so the boots add a polished leather option and a smart-casual step up. The sneakers share the black colour but differ in material, style and formality, so this is partial overlap and not a duplicate.",
+      "duplicates": [],
+      "outfits": [
+        {
+          "name": "Casual summer boots",
+          "files": [
+            "black-tee.jpg",
+            "denim-shorts.jpg",
+            "fedora.jpg"
+          ],
+          "reason": "Black tee and distressed shorts with the boots give a relaxed look with some edge. The fedora's black band ties in with the boots."
+        },
+        {
+          "name": "Workwear layers",
+          "files": [
+            "black-tee.jpg",
+            "denim-jacket.jpg",
+            "denim-shorts.jpg",
+            "backpack.jpg"
+          ],
+          "reason": "The denim jacket and tan backpack suit the rugged leather boots. It's a sturdy everyday outfit, though denim on denim with shorts is very casual."
+        }
+      ]
     }
   },
   "tryons": {
@@ -73,6 +99,18 @@
     },
     "person.jpg|striped-shirt.jpg+sneakers.jpg": {
       "file": "results/person__striped-shirt__sneakers.jpg"
+    },
+    "person.jpg|boots.jpg": {
+      "file": "results/person__boots.jpg"
+    },
+    "person.jpg|black-tee.jpg+boots.jpg": {
+      "file": "results/person__black-tee__boots.jpg"
+    },
+    "person.jpg|orange-tee.jpg+boots.jpg": {
+      "file": "results/person__orange-tee__boots.jpg"
+    },
+    "person.jpg|striped-shirt.jpg+boots.jpg": {
+      "file": "results/person__striped-shirt__boots.jpg"
     }
   },
   "closet": "24325257"

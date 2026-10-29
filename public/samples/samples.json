@@ -1,5 +1,5 @@
 {
-  "credit": "Sample photos are free-licence images from Pexels. Photographers (Pexels usernames): mart-production, anna-nekrashevich, vie-studio, adanvdo, matreding, hiagoitalo, james-frid, wolfart, onkar-salvi-28181962.",
+  "credit": "Sample photos are free-licence images from Pexels. Photographers (Pexels usernames): mart-production, anna-nekrashevich, vie-studio, adanvdo, matreding, hiagoitalo, james-frid, wolfart, onkar-salvi-28181962, beytlik.",
   "person": {
     "file": "person.jpg",
     "name": "Sample photo"
@@ -78,6 +78,15 @@
       "style": "smart casual",
       "formality": "smart casual",
       "notes": "Long-sleeve cotton shirt with thin vertical stripes and a button-down collar."
+    },
+    {
+      "file": "boots.jpg",
+      "name": "Black leather lace-up boots",
+      "category": "shoes",
+      "color": "black",
+      "style": "classic lace-up",
+      "formality": "smart casual",
+      "notes": "Polished black leather with lace-up fronts, a side zip and rounded toes."
     }
   ]
 }

@@ -96,7 +96,7 @@ npm run samples:generate -- --yes  # generates only what is missing
 
 ## Sample photos
 
-The sample photo and sample pieces in `public/samples/` are free-licence images from [Pexels](https://www.pexels.com). Photographers (Pexels usernames): mart-production, anna-nekrashevich, vie-studio, adanvdo, matreding, hiagoitalo, james-frid, wolfart, onkar-salvi-28181962. The sample tags in `samples.json` are ready-made, so loading the samples costs nothing and needs no Claude key. A try-on with them still needs a YouCam key.
+The sample photo and sample pieces in `public/samples/` are free-licence images from [Pexels](https://www.pexels.com). Photographers (Pexels usernames): mart-production, anna-nekrashevich, vie-studio, adanvdo, matreding, hiagoitalo, james-frid, wolfart, onkar-salvi-28181962, beytlik. The sample tags in `samples.json` are ready-made, so loading the samples costs nothing and needs no Claude key. A try-on with them still needs a YouCam key.
 
 ## Spending limits
 
