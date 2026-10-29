@@ -101,7 +101,6 @@ src/advice.ts     Checks Claude's outfits against the real closet
 src/limits.ts     Spending limits
 public/           The page: index.html, app.js, closet.js (IndexedDB), image.js, styles.css
 test/             vitest, with fake YouCam and fake Claude (no network, no cost)
-docs/PLAN.md      The build plan
 ```
 
 ## Tests
