@@ -1,6 +1,7 @@
 import type { RequestHandler } from 'express';
 import { BadRequest, parseDataUrl, type Img } from './images.js';
 import { ORDER, runChain, type Gender, type RenderEvent, type Slot } from './chain.js';
+import { limitMessage, type Limits } from './limits.js';
 import type { YoucamClient } from './youcam.js';
 
 const MAX_ITEMS = ORDER.length;
@@ -28,7 +29,7 @@ function parse(body: any): { person: Img; items: Partial<Record<Slot, Img>>; gen
   return { person, items, gender: given ?? 'male' };
 }
 
-export function renderHandler(getClient: () => YoucamClient | null): RequestHandler {
+export function renderHandler(getClient: () => YoucamClient | null, limits: Limits): RequestHandler {
   return async (req, res) => {
     let input: ReturnType<typeof parse>;
     try {
@@ -40,6 +41,19 @@ export function renderHandler(getClient: () => YoucamClient | null): RequestHand
 
     const client = getClient();
     if (!client) return void res.status(503).json({ error: 'YOUCAM_API_KEY is not set on the server.' });
+
+    // Checked after validation so a bad request costs nothing, and in-flight first so a refused
+    // second click doesn't use up budget.
+    const visitor = req.ip ?? 'unknown';
+    if (!limits.inFlight.tryStart(visitor)) {
+      return void res.status(429).json({ error: 'A try-on is already running. Wait for it to finish.' });
+    }
+    const gate = limits.render.consume(visitor, Object.keys(input.items).length);
+    if (!gate.ok) {
+      limits.inFlight.end(visitor);
+      res.set('Retry-After', String(gate.retryAfterSec));
+      return void res.status(429).json({ error: limitMessage(gate, 'try-ons') });
+    }
 
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
@@ -56,7 +70,11 @@ export function renderHandler(getClient: () => YoucamClient | null): RequestHand
       if (!cancelled && !res.writableEnded) res.write(`data: ${JSON.stringify(event)}\n\n`);
     };
 
-    await runChain({ client, ...input, emit, isCancelled: () => cancelled });
-    res.end();
+    try {
+      await runChain({ client, ...input, emit, isCancelled: () => cancelled });
+    } finally {
+      limits.inFlight.end(visitor);
+      res.end();
+    }
   };
 }

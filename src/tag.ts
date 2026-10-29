@@ -1,20 +1,30 @@
-import type { RequestHandler } from 'express';
+import type { Request, RequestHandler, Response } from 'express';
 import { BadRequest, parseDataUrl } from './images.js';
 import { ClaudeError, type Claude } from './claude.js';
+import { limitMessage, type Budget } from './limits.js';
 import { AdviceRequestSchema } from './schema.js';
 
 type GetClaude = () => Claude | null;
 
-// Both Claude routes share the same failure handling.
+// Both Claude routes share the same key check, spending limit and failure handling.
 async function withClaude<T>(
-  res: Parameters<RequestHandler>[1],
+  req: Request,
+  res: Response,
   getClaude: GetClaude,
+  budget: Budget,
   work: (claude: Claude) => Promise<T>,
   label: string,
   wrap: (value: T) => unknown,
 ) {
   const claude = getClaude();
   if (!claude) return void res.status(503).json({ error: 'ANTHROPIC_API_KEY is not set on the server.' });
+
+  const gate = budget.consume(req.ip ?? 'unknown');
+  if (!gate.ok) {
+    res.set('Retry-After', String(gate.retryAfterSec));
+    return void res.status(429).json({ error: limitMessage(gate, 'Claude requests') });
+  }
+
   try {
     res.json(wrap(await work(claude)));
   } catch (err) {
@@ -26,7 +36,7 @@ async function withClaude<T>(
   }
 }
 
-export function tagHandler(getClaude: GetClaude): RequestHandler {
+export function tagHandler(getClaude: GetClaude, budget: Budget): RequestHandler {
   return async (req, res) => {
     let image;
     try {
@@ -35,11 +45,11 @@ export function tagHandler(getClaude: GetClaude): RequestHandler {
       if (err instanceof BadRequest) return void res.status(400).json({ error: err.message });
       throw err;
     }
-    await withClaude(res, getClaude, (c) => c.tag(image), 'tagging', (tags) => ({ tags }));
+    await withClaude(req, res, getClaude, budget, (c) => c.tag(image), 'tagging', (tags) => ({ tags }));
   };
 }
 
-export function adviseHandler(getClaude: GetClaude): RequestHandler {
+export function adviseHandler(getClaude: GetClaude, budget: Budget): RequestHandler {
   return async (req, res) => {
     const parsed = AdviceRequestSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -49,6 +59,6 @@ export function adviseHandler(getClaude: GetClaude): RequestHandler {
       });
     }
     const { closet, candidate } = parsed.data;
-    await withClaude(res, getClaude, (c) => c.advise(closet, candidate), 'advice', (advice) => ({ advice }));
+    await withClaude(req, res, getClaude, budget, (c) => c.advise(closet, candidate), 'advice', (advice) => ({ advice }));
   };
 }
