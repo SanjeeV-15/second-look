@@ -28,6 +28,9 @@ export function createApp(deps: AppDeps = {}) {
   const app = express();
   const limits = deps.limits ?? limitsFromEnv();
   app.disable('x-powered-by');
+  // Behind a host's proxy (Render, for example) the visitor's address comes from X-Forwarded-For. Without this
+  // every visitor looks like the proxy, and the per-visitor limits would all share one bucket.
+  if (process.env.TRUST_PROXY) app.set('trust proxy', Number(process.env.TRUST_PROXY) || 1);
   app.use((_req, res, next) => {
     res.set({
       'Content-Security-Policy': CSP,
@@ -66,6 +69,12 @@ export function createApp(deps: AppDeps = {}) {
 
   app.get('/api/health', (_req, res) => {
     res.json({ ok: true });
+  });
+
+  // Which live features this server can run. The page uses it to say so when it is a keyless demo.
+  app.get('/api/status', (_req, res) => {
+    const live = { claude: !!getClaude(), youcam: !!getClient() };
+    res.json({ ...live, demo: !live.claude && !live.youcam });
   });
 
   app.post('/api/render', renderHandler(getClient, limits));

@@ -1,0 +1,16 @@
+# Keyless demo of Second Look on Render. There are deliberately NO API keys here: the hosted site runs the
+# pre-generated samples only, so nobody can spend anyone's YouCam units or Anthropic credit through it.
+# Create it from the dashboard: New, then Blueprint, then pick this repo.
+services:
+  - type: web
+    name: second-look
+    runtime: node
+    plan: free # free sleeps after a quiet spell (the first visit can take a minute); use starter to stay awake
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: TRUST_PROXY
+        value: "1"

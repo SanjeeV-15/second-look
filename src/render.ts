@@ -1,6 +1,7 @@
 import type { RequestHandler } from 'express';
 import { BadRequest, parseDataUrl, type Img } from './images.js';
 import { NEEDS_GENDER, ORDER, runChain, type Gender, type RenderEvent, type Slot } from './chain.js';
+import { NO_YOUCAM_KEY } from './demo.js';
 import { limitMessage, type Limits } from './limits.js';
 import type { YoucamClient } from './youcam.js';
 
@@ -42,7 +43,7 @@ export function renderHandler(getClient: () => YoucamClient | null, limits: Limi
     }
 
     const client = getClient();
-    if (!client) return void res.status(503).json({ error: 'YOUCAM_API_KEY is not set on the server.' });
+    if (!client) return void res.status(503).json({ error: NO_YOUCAM_KEY });
 
     // Checked after validation so a bad request costs nothing, and in-flight first so a refused
     // second click doesn't use up budget.

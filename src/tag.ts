@@ -1,6 +1,7 @@
 import type { Request, RequestHandler, Response } from 'express';
 import { BadRequest, parseDataUrl } from './images.js';
 import { ClaudeError, type Claude } from './claude.js';
+import { NO_CLAUDE_KEY } from './demo.js';
 import { limitMessage, type Budget } from './limits.js';
 import { AdviceRequestSchema } from './schema.js';
 
@@ -17,7 +18,7 @@ async function withClaude<T>(
   wrap: (value: T) => unknown,
 ) {
   const claude = getClaude();
-  if (!claude) return void res.status(503).json({ error: 'ANTHROPIC_API_KEY is not set on the server.' });
+  if (!claude) return void res.status(503).json({ error: NO_CLAUDE_KEY });
 
   const gate = budget.consume(req.ip ?? 'unknown');
   if (!gate.ok) {

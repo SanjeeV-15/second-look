@@ -94,6 +94,20 @@ npm run samples:generate -- --yes  # generates only what is missing
 
 `test/precomputed.test.ts` fails if the samples and the pre-generated results ever fall out of step.
 
+## Host a keyless demo
+
+The sample walkthrough needs no API keys, so it can be hosted publicly with **no secrets on the server**. Nobody can spend YouCam units or Anthropic credit through it, because there is nothing to spend. The page shows a Demo mode notice whenever the server has no keys, and a live request (your own photo, an edited piece) gets a message saying to use the samples or run it locally.
+
+On [Render](https://render.com): New, then Blueprint, then pick this repository. `render.yaml` does the rest (Node 22, `npm ci`, `npm start`, a health check). Do not add any API keys. Check it with:
+
+```bash
+curl https://YOUR-SERVICE.onrender.com/api/status   # expect {"claude":false,"youcam":false,"demo":true}
+```
+
+The free plan sleeps after a quiet spell, so the first visit can take about a minute to wake. A paid instance stays awake.
+
+`TRUST_PROXY=1` (set in `render.yaml`) makes the per-visitor limits use each visitor's own address behind the host's proxy. Leave it unset when running locally.
+
 ## Sample photos
 
 The sample photo and sample pieces in `public/samples/` are free-licence images from [Pexels](https://www.pexels.com). Photographers (Pexels usernames): mart-production, anna-nekrashevich, vie-studio, adanvdo, matreding, hiagoitalo, james-frid, wolfart, onkar-salvi-28181962, beytlik. The sample tags in `samples.json` are ready-made, so loading the samples costs nothing and needs no Claude key. A try-on with them still needs a YouCam key.

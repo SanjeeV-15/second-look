@@ -30,6 +30,7 @@ const state = {
   view: 'after', // mirror: 'before' (you) or 'after' (with the outfit)
   render: null, // { label, status, steps, done, image, error, code, sample, calls }
   lastTry: null, // { label, items } so a failed try-on can be retried
+  status: null, // which live features the server has keys for: { claude, youcam, demo }
   rendering: null, // { controller } while a try-on runs
   looks: [], // finished try-ons, newest first: { label, image, sample, calls }
   shownLook: null, // index into looks, or null for the live result
@@ -566,6 +567,16 @@ async function runSampleTryOn(label, pieces, url) {
   }
 }
 
+// Shown in the mirror like any other try-on problem, with no Try again: a retry would get the same answer.
+function showLiveUnavailable(label) {
+  const { view } = beginTryOn(label, [], false);
+  state.lastTry = null;
+  view.status = 'error';
+  view.code = 'refused';
+  view.error = 'Live try-ons are off on this demo. Use the sample photo and pieces, or run Second Look locally with your own keys (see the README).';
+  endTryOn(view, label);
+}
+
 let starting = false; // covers the gaps (asking about shoes, loading samples) before a try-on is running
 
 async function startTryOn(label, items) {
@@ -581,6 +592,9 @@ async function startTryOn(label, items) {
 
     const sampleUrl = await sampleResultFor(pieces);
     if (sampleUrl) return await runSampleTryOn(label, pieces, sampleUrl);
+
+    // A keyless server (the hosted demo) cannot run this live. Say so now, before asking about shoes.
+    if (state.status && !state.status.youcam) return void showLiveUnavailable(label);
 
     if (pieces.some((p) => p.slot === 'shoes') && !state.gender && !(await askFit())) return;
     await runLiveTryOn(label, items, pieces);
@@ -982,6 +996,14 @@ async function init() {
   state.gender = (await getMeta('gender')) ?? null;
   state.view = 'before';
   $('storage-notice').hidden = persistent;
+  // A keyless server (the hosted demo) says so, so nobody is surprised when their own photo can't run live.
+  fetch('/api/status')
+    .then((res) => (res.ok ? res.json() : null))
+    .then((status) => {
+      state.status = status;
+      $('demo-notice').hidden = !status?.demo;
+    })
+    .catch(() => {});
   renderMirror();
   renderCloset();
   renderTray();

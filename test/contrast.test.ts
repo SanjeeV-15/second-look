@@ -77,6 +77,7 @@ function rowsFor(t: Tokens): [string, number, number][] {
   text('danger on card', t.danger!, (s) => s.card);
   text('good on panel', t.good!, (s) => s.panel);
   text('good on journey pill', t.good!, (s) => s.pill);
+  text('ink on the demo-mode notice', t.ink!, (s) => over(c('accent-soft'), s.bd));
   text('warning text on card', t['warn-ink']!, (s) => over(c('warn-bg'), s.card));
   text('warning text on page', t['warn-ink']!, (s) => over(c('warn-bg'), s.bd));
   text('toast text on toast', t.bg!, () => c('ink'));

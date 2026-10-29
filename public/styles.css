@@ -164,6 +164,7 @@ h1 { margin: 0; font-size: 1.45rem; letter-spacing: -0.025em; line-height: 1.15;
 .journey li.done .num::before { content: '\2713'; font-size: 0.8rem; }
 
 .notice { background: var(--warn-bg); color: var(--warn-ink); border-radius: var(--radius-sm); padding: 10px 14px; margin: 12px 0 0; }
+.notice.demo { background: var(--accent-soft); color: var(--ink); line-height: 1.45; }
 
 /* ---------- Glass surfaces ---------- */
 .glass, .panel {
