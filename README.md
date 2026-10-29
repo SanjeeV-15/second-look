@@ -6,7 +6,7 @@ You keep a digital closet of your own clothes. When you find something you might
 
 ## What it does
 
-1. **Your photo.** Choose a photo, take one with your camera, or use the built-in sample. Then choose men's or women's shoes for the fit.
+1. **Your photo.** Choose a photo, take one with your camera, or use the built-in sample.
 2. **Your closet.** Add photos of your clothes (or take them with the camera), or load the sample closet. Claude fills in each item's name, category, colour, style and formality. Every field can be edited. The closet is stored in your browser.
 3. **Thinking of buying?** Add one or several pieces you are considering. For the selected piece, Claude returns:
    - a short, honest verdict (it can say not to buy),
@@ -16,7 +16,13 @@ You keep a digital closet of your own clothes. When you find something you might
 4. **Try it on.** The result appears in a panel that stays beside the controls, one piece at a time, with a before and after toggle and a download button. You can try one piece, an outfit from the advice, or several pieces you ticked in the tray together (one top and one pair of shoes). Earlier results stay in a Recent looks strip.
 5. **I bought it.** Move the piece into your closet.
 
-The page has a light theme by default and a dark theme you can switch to. On a phone, the camera buttons open the device camera.
+Shoes need a men's or women's style, so the app asks once, the first time a try-on includes shoes, and remembers the answer (there is a Change link). Tops never ask.
+
+The page opens in a dark glass theme, with a light theme one click away. Three progress steps at the top tick off as you add a photo, fill the closet and try something on. On a phone, the camera buttons open the device camera. A footer button clears your photo and closet from the browser.
+
+### Accessibility
+
+Every text colour pair and every form border and focus ring meets WCAG AA (4.5:1 for text, 3:1 for borders and focus), in both themes. `test/contrast.test.ts` computes this from the stylesheet, including the translucent glass layers over the brightest part of the background, so a colour change that breaks contrast fails the tests.
 
 ## How it uses the YouCam API
 

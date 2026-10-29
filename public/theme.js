@@ -1,7 +1,7 @@
-// Runs before the page paints so a saved dark theme doesn't flash light first.
-// Light is the default for everyone: the OS setting is deliberately ignored.
+// Runs before the page paints so the chosen theme doesn't flash. Dark is the default;
+// light is used only when the visitor switched to it. The OS setting is deliberately ignored.
 try {
-  if (localStorage.getItem('theme') === 'dark') document.documentElement.dataset.theme = 'dark';
+  if (localStorage.getItem('theme') !== 'light') document.documentElement.dataset.theme = 'dark';
 } catch {
-  /* storage blocked: stay light */
+  document.documentElement.dataset.theme = 'dark'; // storage blocked: default dark
 }

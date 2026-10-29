@@ -1,4 +1,4 @@
-import { deleteItem, getMeta, listItems, persistent, putItem, setMeta } from './closet.js';
+import { clearAll, deleteItem, getMeta, listItems, persistent, putItem, setMeta } from './closet.js';
 import { takePhoto } from './camera.js';
 import { fileToDataUrl, loadSampleImage, loadSampleManifest, postJson, streamRender, tagImage } from './image.js';
 
@@ -162,7 +162,8 @@ function renderMirror() {
     ),
   );
 
-  for (const btn of $('fit').querySelectorAll('button')) btn.setAttribute('aria-pressed', String(btn.dataset.gender === state.gender));
+  updateFitLine();
+  updateJourney();
 }
 
 for (const btn of $('compare').querySelectorAll('button')) {
@@ -171,13 +172,53 @@ for (const btn of $('compare').querySelectorAll('button')) {
     renderMirror();
   });
 }
-for (const btn of $('fit').querySelectorAll('button')) {
-  btn.addEventListener('click', async () => {
-    state.gender = btn.dataset.gender;
-    await setMeta('gender', state.gender);
-    renderMirror();
+// ---------- Shoe fit: asked once, only when a try-on includes shoes ----------
+
+const FIT_LABEL = { male: "Men's styles", female: "Women's styles" };
+
+function updateFitLine() {
+  $('fit-line').hidden = !state.gender;
+  $('fit-value').textContent = FIT_LABEL[state.gender] ?? '';
+}
+
+function askFit() {
+  const dialog = $('fit-dialog');
+  return new Promise((resolve) => {
+    let choice = null;
+    const buttons = [...dialog.querySelectorAll('[data-fit]')];
+    const onClick = (e) => {
+      choice = e.currentTarget.dataset.fit || null;
+      dialog.close();
+    };
+    const finish = async () => {
+      buttons.forEach((b) => b.removeEventListener('click', onClick));
+      dialog.removeEventListener('close', finish);
+      if (choice) {
+        state.gender = choice;
+        await setMeta('gender', choice);
+        renderMirror();
+      }
+      resolve(choice);
+    };
+    buttons.forEach((b) => b.addEventListener('click', onClick));
+    dialog.addEventListener('close', finish);
+    dialog.showModal();
   });
 }
+$('fit-change').addEventListener('click', () => askFit());
+
+// ---------- Progress steps ----------
+
+function updateJourney() {
+  const done = { photo: !!state.person, closet: state.items.length > 0, try: state.looks.length > 0 };
+  const current = ['photo', 'closet', 'try'].find((k) => !done[k]);
+  for (const li of $('journey').children) {
+    const key = li.dataset.step;
+    li.classList.toggle('done', done[key]);
+    li.classList.toggle('current', key === current);
+  }
+}
+
 $('cancel-btn').addEventListener('click', () => state.rendering?.controller.abort());
 
 // ---------- You ----------
@@ -205,7 +246,7 @@ $('you-camera').addEventListener('click', async () => {
   const file = await capture('user', 'Step back so your whole body is in frame, and face the camera.');
   if (file) setPerson(file);
 });
-$('you-sample').addEventListener('click', async () => {
+async function useSamplePerson() {
   try {
     const manifest = await loadSampleManifest();
     state.person = await loadSampleImage(manifest.person.file);
@@ -218,7 +259,9 @@ $('you-sample').addEventListener('click', async () => {
   } catch (err) {
     toast(err.message);
   }
-});
+}
+$('you-sample').addEventListener('click', useSamplePerson);
+$('stage-sample').addEventListener('click', useSamplePerson);
 
 // ---------- Item fields shared by closet cards and the selected piece ----------
 
@@ -267,6 +310,7 @@ async function readItem(file) {
 function renderCloset() {
   const total = state.items.length;
   $('count').textContent = total ? `(${total})` : '';
+  updateJourney();
   $('closet-empty').hidden = total + state.pending.length > 0;
   const cards = state.items.map((item) =>
     el(
@@ -384,10 +428,7 @@ async function startTryOn(label, items) {
     toast('Add your photo first, or use the sample.');
     return void $('mirror').scrollIntoView({ behavior: 'smooth' });
   }
-  if (pieces.some((p) => p.slot === 'shoes') && !state.gender) {
-    toast("Choose Men's or Women's shoes first.");
-    return void $('fit').scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
+  if (pieces.some((p) => p.slot === 'shoes') && !state.gender && !(await askFit())) return;
 
   const controller = new AbortController();
   state.rendering = { controller };
@@ -723,6 +764,14 @@ function renderAdvice() {
   );
   box.replaceChildren(...children);
 }
+
+// ---------- Privacy ----------
+
+$('clear-data').addEventListener('click', async () => {
+  if (!confirm('Remove your photo, closet and saved choices from this browser?')) return;
+  await clearAll();
+  location.reload();
+});
 
 // ---------- Start ----------
 
