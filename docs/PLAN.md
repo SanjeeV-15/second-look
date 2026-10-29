@@ -94,7 +94,3 @@ docs/PLAN.md, README.md, .env.example
 3. Judges need their own keys: make setup short and the README plain.
 4. Face photos are sensitive: process in memory, store nothing, say so.
 5. Demo material must be your own clothes and photo, not stock images or brand logos.
-
-## You write
-
-The Devpost text, the video narration and the YouTube upload. I'll check facts, spelling and the submission checklist.
