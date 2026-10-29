@@ -6,15 +6,17 @@ You keep a digital closet of your own clothes. When you find something you might
 
 ## What it does
 
-1. **Your photo.** Upload one photo of yourself and choose a shoe fit (men's or women's).
-2. **Your closet.** Add photos of your clothes. Claude fills in each item's name, category, colour, style and formality. Every field can be edited. The closet is stored in your browser.
-3. **Thinking of buying something?** Add a photo of the piece. Claude returns:
+1. **Your photo.** Choose a photo, take one with your camera, or use the built-in sample. Then choose men's or women's shoes for the fit.
+2. **Your closet.** Add photos of your clothes (or take them with the camera), or load the sample closet. Claude fills in each item's name, category, colour, style and formality. Every field can be edited. The closet is stored in your browser.
+3. **Thinking of buying?** Add one or several pieces you are considering. For the selected piece, Claude returns:
    - a short, honest verdict (it can say not to buy),
    - what the piece adds, or why it overlaps with what you own,
    - closet items that are close duplicates,
    - up to three outfits built from the piece and your own clothes.
-4. **See it on me.** The outfit is rendered on your photo with YouCam, step by step. Each step appears as it finishes, with a before and after at the end. You can also try the new piece alone.
+4. **Try it on.** The result appears in a panel that stays beside the controls, one piece at a time, with a before and after toggle and a download button. You can try one piece, an outfit from the advice, or several pieces you ticked in the tray together (one top and one pair of shoes). Earlier results stay in a Recent looks strip.
 5. **I bought it.** Move the piece into your closet.
+
+The page has a light theme by default and a dark theme you can switch to. On a phone, the camera buttons open the device camera.
 
 ## How it uses the YouCam API
 
@@ -69,6 +71,10 @@ Open http://localhost:4320. Use a recent Chrome, Edge, Firefox or Safari.
 - **You:** one person, standing and facing the camera, arms relaxed, whole body in frame, plain background. JPG or PNG.
 - **Closet and new pieces:** one item per photo, front-facing, on a plain background. Product-style photos work best for the try-on.
 
+## Sample photos
+
+The sample photo and sample pieces in `public/samples/` are free-licence images from [Pexels](https://www.pexels.com). Photographers (Pexels usernames): mart-production, anna-nekrashevich, vie-studio, adanvdo, matreding, hiagoitalo. The sample tags in `samples.json` are ready-made, so loading the samples costs nothing and needs no Claude key. A try-on with them still needs a YouCam key.
+
 ## Spending limits
 
 The server counts calls so a bug or a stuck client cannot burn credit. State is in memory and resets when the server restarts. Override with environment variables:
@@ -99,7 +105,8 @@ src/render.ts     POST /api/render (streams progress as server-sent events)
 src/claude.ts     Tagging and advice calls to Claude
 src/advice.ts     Checks Claude's outfits against the real closet
 src/limits.ts     Spending limits
-public/           The page: index.html, app.js, closet.js (IndexedDB), image.js, styles.css
+public/           The page: index.html, app.js, closet.js (IndexedDB), camera.js, image.js, theme.js, styles.css
+public/samples/   Sample photo, sample pieces and their ready-made tags
 test/             vitest, with fake YouCam and fake Claude (no network, no cost)
 ```
 

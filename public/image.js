@@ -22,6 +22,23 @@ export async function fileToDataUrl(file, maxSide = 1536, quality = 0.9) {
   return canvas.toDataURL('image/jpeg', quality);
 }
 
+let manifest;
+export async function loadSampleManifest() {
+  manifest ??= fetch('/samples/samples.json').then((res) => {
+    if (!res.ok) throw new Error("Couldn't load the sample photos.");
+    return res.json();
+  });
+  return manifest;
+}
+
+// Sample photos go through the same resize step as the user's own.
+export async function loadSampleImage(file) {
+  const res = await fetch(`/samples/${file}`);
+  if (!res.ok) throw new Error("Couldn't load the sample photo.");
+  const blob = await res.blob();
+  return fileToDataUrl(new File([blob], file, { type: blob.type || 'image/jpeg' }));
+}
+
 export async function postJson(url, payload) {
   let res;
   try {

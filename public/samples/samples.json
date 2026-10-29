@@ -1,0 +1,53 @@
+{
+  "credit": "Sample photos are free-licence images from Pexels. Photographers (Pexels usernames): mart-production, anna-nekrashevich, vie-studio, adanvdo, matreding, hiagoitalo.",
+  "person": { "file": "person.jpg", "name": "Sample photo" },
+  "closet": [
+    {
+      "file": "black-tee.jpg",
+      "name": "Black crew neck t-shirt",
+      "category": "top",
+      "color": "black",
+      "style": "basic minimalist",
+      "formality": "casual",
+      "notes": "Plain solid cotton-style jersey with short sleeves and a ribbed crew neckline."
+    },
+    {
+      "file": "sneakers.jpg",
+      "name": "Black suede low-top sneakers",
+      "category": "shoes",
+      "color": "black and white",
+      "style": "skate sneaker",
+      "formality": "casual",
+      "notes": "Black suede uppers with a white side stripe, white laces and thick white soles."
+    },
+    {
+      "file": "fedora.jpg",
+      "name": "Straw fedora",
+      "category": "hat",
+      "color": "natural straw",
+      "style": "classic summer",
+      "formality": "casual",
+      "notes": "Woven straw with a black band."
+    },
+    {
+      "file": "backpack.jpg",
+      "name": "Tan canvas backpack",
+      "category": "bag",
+      "color": "tan",
+      "style": "rugged outdoor",
+      "formality": "casual",
+      "notes": "Canvas with leather buckle straps and front pockets."
+    }
+  ],
+  "candidates": [
+    {
+      "file": "orange-tee.jpg",
+      "name": "Boxy cropped crew-neck tee",
+      "category": "top",
+      "color": "burnt orange",
+      "style": "minimalist boxy",
+      "formality": "casual",
+      "notes": "Heavy cotton jersey with a ribbed crew neckline and a relaxed, slightly cropped fit."
+    }
+  ]
+}
