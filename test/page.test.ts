@@ -47,6 +47,20 @@ describe('page wiring', () => {
     expect(html).toMatch(/<main[^>]*id="main"/);
   });
 
+  it('is called Second Look everywhere the name shows', () => {
+    expect(html).toMatch(/<title>Second Look/);
+    expect(html).toContain('<h1>Second Look</h1>');
+    expect(html).not.toContain('Closet Try-On');
+    expect(readFileSync(path.join(process.cwd(), 'README.md'), 'utf8')).toMatch(/^# Second Look/);
+  });
+
+  it('shows the YouCam API activity behind each result, and says the try-on is powered by it', () => {
+    expect(html).toContain('Try-on powered by the YouCam API');
+    expect(html).toContain('YouCam API activity');
+    expect(html).toMatch(/id="activity"/);
+    expect(html).toMatch(/id="activity-list"/);
+  });
+
   it('names YouCam in the app, not only in the video', () => {
     expect(html).toContain('Try-on generated with the YouCam API');
     expect(html).toContain('YouCam puts it on you');

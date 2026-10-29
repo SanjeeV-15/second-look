@@ -1,7 +1,7 @@
 import { clearAll, deleteItem, getMeta, listItems, persistent, putItem, setMeta } from './closet.js';
 import { takePhoto } from './camera.js';
 import { fileToDataUrl, loadSampleImage, loadSampleManifest, postJson, streamRender, tagImage } from './image.js';
-import { closetSignature, tagSignature, tryOnKey } from './samplekeys.js';
+import { STEP_INFO, UNITS_PER_STEP, closetSignature, tagSignature, tryOnKey } from './samplekeys.js';
 
 const CATEGORIES = ['top', 'bottom', 'shoes', 'outerwear', 'hat', 'bag', 'accessory'];
 const MAX_CLOSET = 40;
@@ -28,10 +28,10 @@ const state = {
   advices: {}, // tray item id -> advice
   advising: false,
   view: 'after', // mirror: 'before' (you) or 'after' (with the outfit)
-  render: null, // { label, status, steps, done, image, error, code }
+  render: null, // { label, status, steps, done, image, error, code, sample, calls }
   lastTry: null, // { label, items } so a failed try-on can be retried
   rendering: null, // { controller } while a try-on runs
-  looks: [], // finished try-ons, newest first: { label, image, sample }
+  looks: [], // finished try-ons, newest first: { label, image, sample, calls }
   shownLook: null, // index into looks, or null for the live result
 };
 
@@ -82,6 +82,35 @@ async function capture(facing, hint) {
   } catch (err) {
     toast(err.message);
     return null;
+  }
+}
+
+// ---------- YouCam API activity ----------
+// What was actually called to make the picture on screen. Live results report the real endpoint, parameters,
+// time and units; a pre-generated sample lists the same steps, labelled, without timings.
+
+function renderActivity(result) {
+  const calls = result?.calls ?? [];
+  $('activity').hidden = calls.length === 0;
+  if (!calls.length) return;
+
+  $('activity-list').replaceChildren(
+    ...calls.map((call) =>
+      el(
+        'li',
+        {},
+        el('code', {}, `POST /s2s/v2.0/task/${call.task}`),
+        el('span', { class: 'call-detail' }, call.detail),
+        el('span', { class: 'call-meta' }, [call.ms != null ? `${(call.ms / 1000).toFixed(1)} s` : null, `${call.units} units`].filter(Boolean).join(' · ')),
+      ),
+    ),
+  );
+  const units = calls.reduce((n, c) => n + c.units, 0);
+  if (result.sample) {
+    $('activity-note').textContent = `Pre-generated sample: these are the ${calls.length} YouCam calls (${units} units) that produced it. Timings are not shown.`;
+  } else {
+    const seconds = calls.reduce((n, c) => n + (c.ms ?? 0), 0) / 1000;
+    $('activity-note').textContent = `${calls.length} YouCam call${calls.length > 1 ? 's' : ''}, ${units} units, ${seconds.toFixed(1)} s. Each call uploads the photos, then polls until the task finishes.`;
   }
 }
 
@@ -158,8 +187,11 @@ $('theme-btn').addEventListener('click', () => {
 
 function liveResult() {
   const look = state.shownLook != null ? state.looks[state.shownLook] : null;
-  if (look) return { image: look.image, label: look.label, look: true, sample: !!look.sample };
-  if (state.render?.image) return { image: state.render.image, label: state.render.label, look: false, sample: !!state.render.sample };
+  if (look) return { image: look.image, label: look.label, look: true, sample: !!look.sample, calls: look.calls ?? [] };
+  if (state.render?.image) {
+    const r = state.render;
+    return { image: r.image, label: r.label, look: false, sample: !!r.sample, calls: r.calls ?? [] };
+  }
   return null;
 }
 
@@ -201,6 +233,8 @@ function renderMirror() {
 
   $('render-actions').hidden = !(showResult && (result.look || r?.status === 'done'));
   if (showResult) $('download').href = result.image;
+
+  renderActivity(showResult ? result : null);
 
   $('looks').hidden = state.looks.length === 0;
   $('looks-row').replaceChildren(
@@ -489,7 +523,7 @@ function refreshButtons() {
 function beginTryOn(label, steps, sample) {
   const controller = new AbortController();
   state.rendering = { controller };
-  const view = (state.render = { label, status: 'running', steps, done: [], image: null, error: null, code: null, sample });
+  const view = (state.render = { label, status: 'running', steps, done: [], image: null, error: null, code: null, sample, calls: [] });
   state.view = 'after';
   state.shownLook = null;
   renderMirror();
@@ -502,7 +536,7 @@ function beginTryOn(label, steps, sample) {
 function endTryOn(view, label) {
   state.rendering = null;
   if (view.status === 'done' && view.image) {
-    state.looks.unshift({ label, image: view.image, sample: !!view.sample });
+    state.looks.unshift({ label, image: view.image, sample: !!view.sample, calls: view.calls });
     state.looks.length = Math.min(state.looks.length, MAX_LOOKS);
   }
   renderMirror();
@@ -519,6 +553,7 @@ async function runSampleTryOn(label, pieces, url) {
       await pause(900, controller.signal);
       if (controller.signal.aborted) break;
       view.done.push(slot);
+      view.calls.push({ slot, task: STEP_INFO[slot].task, detail: STEP_INFO[slot].detail, ms: null, units: UNITS_PER_STEP });
       renderMirror();
     }
     if (controller.signal.aborted) view.status = 'cancelled';
@@ -563,6 +598,7 @@ async function runLiveTryOn(label, items, pieces) {
     else if (evt.type === 'step') {
       view.done.push(evt.slot);
       view.image = evt.image;
+      view.calls.push({ slot: evt.slot, task: evt.task, detail: evt.detail, ms: evt.ms, units: evt.units });
     } else if (evt.type === 'done') view.status = 'done';
     else if (evt.type === 'error') {
       view.status = 'error';

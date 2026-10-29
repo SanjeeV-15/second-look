@@ -16,15 +16,27 @@ export const NEEDS_GENDER: Slot[] = ['shoes'];
 // cannot be chained on top of a try-on without destroying it.
 
 // Always name the category: "full_body" was seen changing the shoes unasked.
-const STEPS: Record<Slot, { task: string; params: (gender: Gender) => Record<string, unknown> }> = {
-  top: { task: 'cloth-v4', params: () => ({ garment_category: 'upper_body' }) },
-  bottom: { task: 'cloth-v4', params: () => ({ garment_category: 'lower_body' }) },
-  shoes: { task: 'shoes-transfer', params: (gender) => ({ gender, style: 'random' }) },
+// `detail` is the same parameters as a short, readable string for the on-screen API activity list.
+const STEPS: Record<
+  Slot,
+  { task: string; params: (gender: Gender) => Record<string, unknown>; detail: (gender: Gender) => string }
+> = {
+  top: { task: 'cloth-v4', params: () => ({ garment_category: 'upper_body' }), detail: () => 'garment_category: upper_body' },
+  bottom: { task: 'cloth-v4', params: () => ({ garment_category: 'lower_body' }), detail: () => 'garment_category: lower_body' },
+  shoes: {
+    task: 'shoes-transfer',
+    params: (gender) => ({ gender, style: 'random' }),
+    detail: (gender) => `gender: ${gender}, style: random`,
+  },
 };
+
+// What YouCam charges for one try-on task (documented as 2 units for both the clothes and shoes APIs).
+export const UNITS_PER_STEP = 2;
 
 export type RenderEvent =
   | { type: 'start'; steps: Slot[] }
-  | { type: 'step'; slot: Slot; index: number; image: string }
+  // task/detail/ms/units describe the YouCam call that produced this image, for the on-screen activity list.
+  | { type: 'step'; slot: Slot; index: number; image: string; task: string; detail: string; ms: number; units: number }
   | { type: 'done' }
   | { type: 'error'; slot: Slot | null; code: YoucamErrorCode; message: string; completed: number };
 
@@ -56,14 +68,25 @@ export async function runChain({ client, person, items, gender, emit, isCancelle
       if (isCancelled?.()) return;
       current = slot;
       const step = STEPS[slot];
+      const started = Date.now();
       const resultUrl = await client.runTask(step.task, {
         ...source,
         ref_file_id: itemIds[index],
         ...step.params(gender),
       });
+      const ms = Date.now() - started;
       const bytes = await client.download(resultUrl);
       completed++;
-      emit({ type: 'step', slot, index, image: toDataUrl(bytes) });
+      emit({
+        type: 'step',
+        slot,
+        index,
+        image: toDataUrl(bytes),
+        task: step.task,
+        detail: step.detail(gender),
+        ms,
+        units: UNITS_PER_STEP,
+      });
       source = { src_file_url: resultUrl };
     }
     emit({ type: 'done' });

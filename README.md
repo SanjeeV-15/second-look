@@ -1,6 +1,6 @@
-# Closet Try-On
+# Second Look
 
-A closet-aware outfit try-on, built on the YouCam API for the YouCam API Skin AI & eCommerce VTO Hackathon.
+Second Look is a closet-aware outfit try-on, built on the YouCam API for the YouCam API Skin AI & eCommerce VTO Hackathon.
 
 You keep a digital closet of your own clothes. When you find something you might buy, you add its photo. Claude compares it with your closet and says what it goes with, what it duplicates, and what it adds. YouCam then shows the outfit on a photo of you, one piece at a time.
 
@@ -18,7 +18,7 @@ You keep a digital closet of your own clothes. When you find something you might
 
 Shoes need a men's or women's style, so the app asks once, the first time a try-on includes shoes, and remembers the answer (there is a Change link). Tops never ask.
 
-A How it works button explains the flow in the app itself, results carry a "generated with the YouCam API" line and can be enlarged, and a failed try-on offers Try again when a retry makes sense (a bad pose asks for a better photo instead).
+A How it works button explains the flow in the app itself. Results carry a "generated with the YouCam API" line and a **YouCam API activity** list that shows the real calls behind the picture (the endpoint, its parameters, how long it took and the units it cost; for pre-generated samples the same steps without timings). Results can be enlarged, and a failed try-on offers Try again when a retry makes sense (a bad pose asks for a better photo instead).
 
 The page opens in a dark glass theme, with a light theme one click away. Three progress steps at the top tick off as you add a photo, fill the closet and try something on. On a phone, the camera buttons open the device camera. A footer button clears your photo and closet from the browser.
 

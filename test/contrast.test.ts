@@ -71,6 +71,7 @@ function rowsFor(t: Tokens): [string, number, number][] {
   text('unselected toggle on its track', t.muted!, (s) => over(c('accent-soft'), s.panel));
   text('accent text on chip', t['accent-text']!, (s) => over(c('accent-soft'), s.card));
   text('accent text on panel', t['accent-text']!, (s) => s.panel);
+  text('accent text on card (API activity)', t['accent-text']!, (s) => s.card);
   text('accent text on journey number', t['accent-text']!, (s) => over(c('accent-soft'), s.pill));
   text('danger on panel', t.danger!, (s) => s.panel);
   text('danger on card', t.danger!, (s) => s.card);

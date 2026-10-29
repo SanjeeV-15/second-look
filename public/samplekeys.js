@@ -4,6 +4,14 @@
 // Only these can be rendered, and the chain always runs them in this order.
 export const WEARABLE_ORDER = ['top', 'shoes'];
 
+// What a try-on step calls on the YouCam API, used to describe pre-generated results (live results report the
+// real values). A test checks these against what the server really sends, so the two cannot drift apart.
+export const STEP_INFO = {
+  top: { task: 'cloth-v4', detail: 'garment_category: upper_body' },
+  shoes: { task: 'shoes-transfer', detail: 'style: random' },
+};
+export const UNITS_PER_STEP = 2;
+
 const base = (file) => file.replace(/\.[^.]+$/, '');
 
 // Items come from the page (sampleFile) or from samples.json (file).

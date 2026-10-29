@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Closet Try-On: see new pieces on you</title>
+  <title>Second Look: see new pieces on you</title>
   <meta name="description" content="See a new piece on you, styled with what you already own.">
   <meta name="theme-color" content="#080b16">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -20,8 +20,9 @@
       <div class="brand">
         <span class="mark" aria-hidden="true"></span>
         <div>
-          <h1>Closet Try-On</h1>
+          <h1>Second Look</h1>
           <p class="tagline">See a new piece on you, styled with what you already own.</p>
+          <p class="powered">Try-on powered by the YouCam API · Styling by Claude</p>
         </div>
       </div>
       <div class="row">
@@ -90,6 +91,12 @@
         </div>
 
         <p class="credit" id="credit" hidden>Try-on generated with the YouCam API</p>
+
+        <details class="activity" id="activity" hidden>
+          <summary>YouCam API activity</summary>
+          <ol id="activity-list"></ol>
+          <p class="hint" id="activity-note"></p>
+        </details>
 
         <div class="looks" id="looks" hidden>
           <h3>Recent looks</h3>

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { runChain, type RenderEvent } from '../src/chain.js';
 import type { Img } from '../src/images.js';
 import { fakeYoucam, JPEG } from './helpers.js';
+// @ts-expect-error plain browser module with no type declarations
+import { STEP_INFO, UNITS_PER_STEP } from '../public/samplekeys.js';
 
 const img = (name: string): Img => ({ bytes: JPEG, type: 'image/jpeg', name });
 
@@ -36,6 +38,29 @@ describe('runChain', () => {
     expect(events[0]).toEqual({ type: 'start', steps: ['top', 'shoes'] });
     expect(events[1]).toMatchObject({ type: 'step', slot: 'top', index: 0 });
     expect(events[2]).toMatchObject({ type: 'step', slot: 'shoes', index: 1 });
+  });
+
+  it('reports each YouCam call so the page can show its API activity', async () => {
+    const { events } = await run({ top: img('t.jpg'), shoes: img('s.jpg') });
+    const steps = events.filter((e) => e.type === 'step') as Extract<RenderEvent, { type: 'step' }>[];
+    expect(steps.map((s) => [s.task, s.detail, s.units])).toEqual([
+      ['cloth-v4', 'garment_category: upper_body', 2],
+      ['shoes-transfer', 'gender: male, style: random', 2],
+    ]);
+    for (const s of steps) {
+      expect(typeof s.ms).toBe('number');
+      expect(s.ms).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('describes pre-generated steps the same way the server describes live ones', async () => {
+    const { events } = await run({ top: img('t.jpg'), shoes: img('s.jpg') });
+    const [top, shoes] = events.filter((e) => e.type === 'step') as Extract<RenderEvent, { type: 'step' }>[];
+    expect(top!.task).toBe(STEP_INFO.top.task);
+    expect(top!.detail).toBe(STEP_INFO.top.detail);
+    expect(shoes!.task).toBe(STEP_INFO.shoes.task);
+    expect(shoes!.detail.endsWith(STEP_INFO.shoes.detail)).toBe(true);
+    expect(top!.units).toBe(UNITS_PER_STEP);
   });
 
   it('runs in the fixed order whatever order the items were given', async () => {

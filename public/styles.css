@@ -116,6 +116,15 @@ main:focus { outline: none; }
 h1 { margin: 0; font-size: 1.45rem; letter-spacing: -0.025em; line-height: 1.15; }
 .tagline { margin: 2px 0 0; color: var(--muted); font-size: 0.92rem; }
 
+.powered { margin: 2px 0 0; color: var(--muted); font-size: 0.78rem; }
+
+.activity { border: 1px solid var(--stroke); border-radius: 14px; background: var(--glass-soft); padding: 8px 12px; font-size: 0.84rem; }
+.activity summary { cursor: pointer; font-weight: 650; }
+.activity ol { margin: 10px 0 6px; padding-left: 1.2rem; display: grid; gap: 10px; }
+.activity code { font: 0.8rem ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--accent-text); overflow-wrap: anywhere; }
+.activity .call-detail, .activity .call-meta { display: block; color: var(--muted); }
+.activity .hint { margin: 6px 0 2px; font-size: 0.8rem; }
+
 .icon-btn {
   width: 44px; height: 44px; flex: none;
   display: grid; place-items: center;
