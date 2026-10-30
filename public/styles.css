@@ -1,4 +1,4 @@
-/* Sleek glass UI. Dark is the default; light applies when the visitor switches to it (no data-theme).
+/* Sleek glass UI. Light is the default; dark applies when the visitor switches to it (data-theme='dark').
    Every text/background pair below was checked against WCAG AA (4.5:1 for text, 3:1 for field borders). */
 :root {
   --bg: #eef2fa;
@@ -422,7 +422,8 @@ dialog .row { margin-top: 14px; }
 .camera-hint:empty { display: none; }
 .how-list { margin: 10px 0 12px; padding-left: 1.2rem; display: grid; gap: 8px; }
 .how-list li::marker { color: var(--accent-text); font-weight: 700; }
-dialog.zoom { width: auto; max-width: 94vw; padding: 12px; display: grid; gap: 10px; justify-items: center; }
+dialog.zoom { width: auto; max-width: 94vw; padding: 12px; }
+dialog.zoom[open] { display: grid; gap: 10px; justify-items: center; }
 dialog.zoom img { max-width: 100%; max-height: 82vh; border-radius: 14px; display: block; }
 
 .toast {

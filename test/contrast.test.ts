@@ -109,9 +109,10 @@ describe.each([
 });
 
 describe('theme defaults', () => {
-  it('uses dark unless the visitor chose light', () => {
+  it('uses light unless the visitor chose dark', () => {
     const script = readFileSync(path.join(process.cwd(), 'public', 'theme.js'), 'utf8');
-    expect(script).toContain("'light'");
+    expect(script).toContain("let dark = false");
+    expect(script).toContain("=== 'dark'");
     expect(script).toContain("dataset.theme = 'dark'");
   });
 });

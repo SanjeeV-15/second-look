@@ -8,6 +8,16 @@ const script = (file: string) => readFileSync(pub(file), 'utf8');
 
 const htmlIds = new Set([...html.matchAll(/\sid="([\w-]+)"/g)].map((m) => m[1]));
 
+describe('dialogs', () => {
+  // A display rule on a dialog beats the browser's "closed dialogs are hidden", so a closed zoom dialog
+  // showed up at the bottom of the page as a broken image. Display must only be set while it is open.
+  it('only sets display on the zoom dialog while it is open', () => {
+    const css = script('styles.css');
+    expect(css).toMatch(/dialog\.zoom\[open\]\s*\{[^}]*display:\s*grid/);
+    expect(css).not.toMatch(/dialog\.zoom\s*\{[^}]*display:/);
+  });
+});
+
 describe('page wiring', () => {
   // The scripts find elements by id. A typo or a removed element would not fail a build; it would throw
   // in the browser the first time that code runs, so check every lookup against the HTML.

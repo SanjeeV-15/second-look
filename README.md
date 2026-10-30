@@ -22,7 +22,7 @@ Shoes need a men's or women's style, so the app asks once, the first time a try-
 
 A How it works button explains the flow in the app itself. Results carry a "generated with the YouCam API" line and a **YouCam API activity** list that shows the real calls behind the picture (the endpoint, its parameters, how long it took and the units it cost; for pre-generated samples the same steps without timings). Results can be enlarged, and a failed try-on offers Try again when a retry makes sense (a bad pose asks for a better photo instead).
 
-The page opens in a dark glass theme, with a light theme one click away. Three progress steps at the top tick off as you add a photo, fill the closet and try something on. On a phone, the camera buttons open the device camera. A footer button clears your photo and closet from the browser.
+The page opens in a light glass theme, with a dark theme one click away. Three progress steps at the top tick off as you add a photo, fill the closet and try something on. On a phone, the camera buttons open the device camera. A footer button clears your photo and closet from the browser.
 
 ### Accessibility
 
